@@ -1,0 +1,186 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mario-andreschak/mcp-abap-abap-adt-api",
+  "description": "ABAP development over ADT plus RFC calls, logging on with Kerberos SSO or a client certificate",
+  "version": "0.1.1",
+  "repository": {
+    "url": "https://github.com/mario-andreschak/mcp-abap-abap-adt-api",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "mcp-abap-abap-adt-api",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SAP_URL",
+          "description": "Base URL of the SAP system, e.g. https://host:44301. Certificate mode requires https, since the certificate is presented in the TLS handshake.",
+          "isRequired": true
+        },
+        {
+          "name": "SAP_USER",
+          "description": "The SAP user. In certificate mode it is never transmitted - SAP resolves the user from the CERTRULE mapping - but it has to agree with that mapping, because it is what healthcheck and listLoggedOnUsers report as the current user. There is no password in either mode.",
+          "isRequired": true
+        },
+        {
+          "name": "SAP_CLIENT",
+          "description": "SAP client, e.g. 100. A server is bound to one system and one client for its whole life and cannot switch either at runtime.",
+          "placeholder": "100"
+        },
+        {
+          "name": "SAP_LANGUAGE",
+          "description": "Logon language, e.g. EN.",
+          "placeholder": "EN"
+        },
+        {
+          "name": "SAP_SYSTEM_ID",
+          "description": "The system id as in sy-sysid, e.g. DEV. Never sent. It is announced in the MCP instructions, so a client with several of these servers registered can route a request naming a system to the right one without calling anything, and it is checked against the system SAP names in its session cookie.",
+          "placeholder": "DEV"
+        },
+        {
+          "name": "SAP_AUTH_MODE",
+          "description": "Which credential to log on with. Usually unnecessary: SAP_CERT_FILE selects certificate mode, SAP_OAUTH_CLIENT_ID selects OAuth 2.0 and SAP_PASSWORD selects password mode. Set it explicitly to force Kerberos while one of those is configured.",
+          "choices": [
+            "kerberos",
+            "certificate",
+            "oauth",
+            "password"
+          ]
+        },
+        {
+          "name": "SAP_PASSWORD",
+          "description": "Password for SAP_USER, selecting HTTP Basic logon. The last resort: a wrong or expired password counts against login/fails_to_user_lock and locks the user for everything that uses it, which neither Kerberos nor a client certificate can do. Prefer SAP_CERT_FILE for anything unattended. Ignored when a certificate is configured, and read as the resource owner's password by the OAuth password grant.",
+          "isSecret": true
+        },
+        {
+          "name": "SAP_OAUTH_TOKEN_URL",
+          "description": "The OAuth 2.0 token endpoint, which selects OAuth mode. On AS ABAP that is https://<host>:<port>/sap/bc/sec/oauth2/token; on SAP BTP it is the url from the service key with /oauth/token appended. Must be https: the client credential travels in a header.",
+          "format": "url"
+        },
+        {
+          "name": "SAP_OAUTH_CLIENT_ID",
+          "description": "The OAuth 2.0 client registered in SOAUTH2, or clientid from a BTP service key. Setting it selects OAuth mode, which is the one to use for an SAP BTP ABAP environment or any system that publishes ADT behind an authorisation server.",
+          "placeholder": "sb-abap-agent!t1234"
+        },
+        {
+          "name": "SAP_OAUTH_CLIENT_SECRET",
+          "description": "The client secret for SAP_OAUTH_CLIENT_ID, and the whole credential under the client_credentials grant. An OAuth 2.0 client on AS ABAP is a user in SU01, so a wrong secret counts against login/fails_to_user_lock like a password: a refusal is never retried.",
+          "isSecret": true
+        },
+        {
+          "name": "SAP_OAUTH_GRANT",
+          "description": "How the access token is obtained. Unset means client_credentials, which is the one that runs unattended; SAP_OAUTH_TOKEN selects static and SAP_OAUTH_REFRESH_TOKEN selects refresh_token by themselves. The authorisation-code flow is not here: it needs a browser, which a server started over stdio has no way to open.",
+          "choices": [
+            "client_credentials",
+            "refresh_token",
+            "password",
+            "static"
+          ]
+        },
+        {
+          "name": "SAP_OAUTH_SCOPE",
+          "description": "Space-separated scopes to request. Optional: unset asks for the client's default scopes, which is usually right. In SOAUTH2 a scope is bound to an ICF service, so a token minted for another one is refused by ADT.",
+          "placeholder": "ZADT"
+        },
+        {
+          "name": "SAP_OAUTH_REFRESH_TOKEN",
+          "description": "The long-lived half of an authorisation-code flow someone completed in a browser, exchanged here for access tokens. A server that rotates them - SAP BTP does - invalidates this one on first use, and the replacement is kept in memory only, so it has to be renewed by hand when the server is restarted after it lapses.",
+          "isSecret": true
+        },
+        {
+          "name": "SAP_OAUTH_TOKEN",
+          "description": "An access token minted somewhere else (cf oauth-token, a proxy, a test), used as-is. Nothing here can renew it, so a rejection is final until the server is restarted with a new one - set SAP_OAUTH_TOKEN_URL and a client id for anything long-running.",
+          "isSecret": true
+        },
+        {
+          "name": "SAP_OAUTH_CLIENT_AUTH",
+          "description": "How the client identifies itself at the token endpoint: basic puts the id and secret in an Authorization header (the default, and what SAP and UAA expect), post puts both in the form body. Only worth changing when an authorisation server rejects a secret that is known to be right.",
+          "choices": [
+            "basic",
+            "post"
+          ],
+          "default": "basic"
+        },
+        {
+          "name": "SAP_CERT_FILE",
+          "description": "PKCS#12 (.p12/.pfx) or PEM file holding the client certificate and its private key; the extension decides how it is opened. Setting this selects certificate mode, which is the one to use for a service or technical user with no Kerberos identity.",
+          "format": "filepath"
+        },
+        {
+          "name": "SAP_CERT_KEY_FILE",
+          "description": "The private key, when it is not in SAP_CERT_FILE. A PEM normally holds both, in which case leave this unset.",
+          "format": "filepath"
+        },
+        {
+          "name": "SAP_CERT_PASSPHRASE",
+          "description": "PKCS#12 password or PEM key passphrase. For a PSE export this is the PSE PIN.",
+          "isSecret": true
+        },
+        {
+          "name": "SAP_CA_FILE",
+          "description": "CA bundle for verifying SAP's own server certificate when it is issued by an internal CA. This is about verifying SAP, not about the client certificate. In OAuth mode it is added to the public roots rather than replacing them, because the token endpoint is often a different host with a public certificate.",
+          "format": "filepath"
+        },
+        {
+          "name": "NODE_TLS_REJECT_UNAUTHORIZED",
+          "description": "Set to 0 to accept a server certificate from an unknown CA. Development only - SAP_CA_FILE is the alternative that keeps verification on.",
+          "choices": [
+            "0",
+            "1"
+          ]
+        },
+        {
+          "name": "SSO_CURL_PATH",
+          "description": "Kerberos mode only: the curl binary that carries the SPNEGO handshake, which Node cannot perform itself. Defaults to C:\\Windows\\System32\\curl.exe on Windows and curl elsewhere, and has to be one built with GSS-API or Schannel support.",
+          "format": "filepath"
+        },
+        {
+          "name": "ABAP_MCP_PROFILE",
+          "description": "Which tools this server lists, and therefore which it will answer. A tool outside the profile is not listed and not callable, which is what makes analyst a guarantee that nothing edits source rather than a smaller menu. An unrecognised name stops the server at startup instead of falling back.",
+          "choices": [
+            "core",
+            "analyst",
+            "rfc",
+            "dev",
+            "all"
+          ],
+          "default": "all"
+        },
+        {
+          "name": "ABAP_MCP_MAX_RESPONSE_BYTES",
+          "description": "Ceiling on a single answer, in bytes. Unset follows the profile; 0 removes it. An over-budget answer is withheld and replaced by valid JSON stating its size and the next step, never by a cut-off fragment.",
+          "format": "number"
+        },
+        {
+          "name": "ABAP_MCP_GATE",
+          "description": "Ask the system's ADT discovery what it supports before listing tools, and withhold those whose collections are absent. Costs one round trip on first use, and every failure path leaves the list complete. Set to off to skip it.",
+          "choices": [
+            "on",
+            "off"
+          ],
+          "default": "on"
+        },
+        {
+          "name": "SAP_JSONRPC_PATH",
+          "description": "ICF path of the SAP Gateway JSON-RPC service the RFC tools call, when it is published under an alias.",
+          "default": "/sap/gw/jsonrpc"
+        },
+        {
+          "name": "ABAP_MCP_RFC_FALLBACK",
+          "description": "Start even when SAP refuses this user the ADT node, taking the session from SAP_FALLBACK_BOOTSTRAP_PATH instead. For a technical user that has RFC authorisations but no S_DEVELOP: the RFC/JSON-RPC tools work and every ADT tool fails at call time. Off by default, because a logon failure is a diagnosis worth keeping.",
+          "default": "0"
+        },
+        {
+          "name": "SAP_FALLBACK_BOOTSTRAP_PATH",
+          "description": "Which ICF node the ABAP_MCP_RFC_FALLBACK session logs on to. It only has to be a node this user reaches that issues a session cookie and a CSRF token.",
+          "default": "/sap/opu/odata/IWFND/CATALOGSERVICE;v=2/"
+        }
+      ]
+    }
+  ]
+}

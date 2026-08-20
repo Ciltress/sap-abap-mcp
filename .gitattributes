@@ -1,0 +1,8 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Anything that runs inside the Linux image keeps LF whatever the host does.
+# A CRLF checkout of docker-entrypoint.sh turns its shebang into `/bin/sh\r`,
+# and the container then fails with "no such file or directory" naming a file
+# that is plainly there.
+*.sh text eol=lf

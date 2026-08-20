@@ -1,0 +1,40 @@
+# Keep the build context small, and keep secrets out of the image.
+#
+# `docs/`, `skills/`, `AGENTS.md` and `docker-entrypoint.sh` are deliberately
+# absent from this file: the first three are read at runtime and the Dockerfile
+# copies them in, and the last one is the entrypoint.
+
+.git
+.gitattributes
+.gitmodules
+.github
+
+node_modules
+dist
+coverage
+
+# Credentials. `.env` above all: config belongs in `docker run --env-file` or the
+# MCP client's `env` block, never baked into a layer.
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.pem
+*.key
+*.pse
+*.csr
+
+# Kerberos credentials. A keytab is a password in another form: it belongs on a
+# read-only mount, never in a layer, where it would travel with the image.
+*.keytab
+krb5cc*
+
+# Agent and editor state, not part of a build.
+.claude
+.vscode
+.idea
+*.code-workspace
+
+Dockerfile
+.dockerignore

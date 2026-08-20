@@ -1,0 +1,18 @@
+.env
+coverage
+dist
+node_modules
+package-lock.json
+*.code-workspace
+
+# Client certificates and private keys — never commit key material.
+*.p12
+*.pfx
+*.pem
+*.key
+*.pse
+*.csr
+
+# Kerberos keytabs and ticket caches. A keytab is a password in another form.
+*.keytab
+krb5cc*
