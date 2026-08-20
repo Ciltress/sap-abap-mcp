@@ -1,6 +1,6 @@
 > **Status:** experimental. Use with caution against productive systems.
 
-# ABAP ADT MCP Server (SSO)
+# ABAP ADT MCP Server
 
 An [MCP](https://modelcontextprotocol.io) server that gives an AI agent full read/write access to an
 SAP ABAP system through **ADT** (ABAP Development Tools), authenticated with **SPNEGO/Kerberos single
