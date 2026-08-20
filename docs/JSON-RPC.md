@@ -150,7 +150,7 @@ same batch, worked.
 
 To check callability *without* calling, list the owning package with `searchPackages` and read its
 **`SRFC` ("RFC Services")** node, which enumerates the package's RFC-enabled function modules. In
-`ZPP_LABEL` it holds exactly `ZPP_ADD_LABEL_DATA` and `ZPP_READ_LABEL_DATA`, while the package has five
+`ZTEST` it holds exactly `ZTEST1` and `ZTEST2`, while the package has five
 function groups.
 
 ### Telling "not RFC-enabled" from "not authorised"
@@ -175,8 +175,8 @@ calls they land in two LUWs and the BAPI's changes are rolled back instead of co
 Proven live on DEV/100 with one three-member batch:
 
 ```
-[ ZPP_ADD_LABEL_DATA (MODUS 'M')   -> INSERTs into ZLABELHEAD / ZLABELTRUCK / ZLABELDATAHEAD
-, RFC_READ_TABLE on ZLABELHEAD     -> returned the row member 1 had just inserted
+[ ZTEST_DB_FM (MODUS 'I')   -> INSERTs into ZTEST_DB / ZTEST_DB2 / ZTEST_DB3
+, RFC_READ_TABLE on ZTEST_DB     -> returned the row member 1 had just inserted
 , BAPI_TRANSACTION_ROLLBACK        -> ROLLBACK WORK
 ]
 ```
@@ -189,9 +189,9 @@ Two independent findings, each of which requires a shared LUW:
    a *separate* request afterwards returned zero rows, so the write had never been committed and the
    rollback reached it.
 
-`ZPP_ADD_LABEL_DATA` is a good probe because it writes with direct Open SQL rather than
+`ZTEST1` is a good probe because it writes with direct Open SQL rather than
 `IN UPDATE TASK`, so its inserts sit in the caller's LUW where a rollback can reach them. The only
-residue is a number-range gap (`ZPPLBHEAD` / `ZPPLBDHEAD`), because `NUMBER_GET_NEXT` is deliberately
+residue is a number-range gap (`ZTEST_DB1` / `ZTEST_DB2`), because `NUMBER_GET_NEXT` is deliberately
 not transactional.
 
 The corollary: **a rollback or commit sent as a later, separate call cannot reach an earlier one**,
@@ -334,7 +334,7 @@ Additionally, by hand through the MCP client (§5 has the detail):
 | Check | Result |
 | --- | --- |
 | batch members share one LUW | member 2 read member 1's uncommitted insert; member 3's rollback discarded it; nothing persisted |
-| a custom Z function module is callable | `ZPP_ADD_LABEL_DATA` — nested `BAPIRET2` returned as an object, inputs echoed back |
+| a custom Z function module is callable | `ZTEST1` — nested `BAPIRET2` returned as an object, inputs echoed back |
 
 ---
 
