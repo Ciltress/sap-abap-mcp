@@ -1,8 +1,14 @@
 # syntax=docker/dockerfile:1
 
-# This server speaks MCP over **stdio**, not HTTP. There is no port to publish
-# and nothing to health-probe: a client starts it with `docker run -i --rm` and
-# talks to it over the container's stdin/stdout.
+# This server speaks MCP over **stdio** by default, and over **Streamable
+# HTTP** when started with `ABAP_MCP_TRANSPORT=http` (see docs/Authentication.md)
+# — the mode a container meant for several team members to connect to at once
+# wants. In stdio mode there is no port to publish and nothing to health-probe:
+# a client starts it with `docker run -i --rm` and talks to it over the
+# container's stdin/stdout. In HTTP mode it listens on `ABAP_MCP_HTTP_PORT`
+# (default 3000, `EXPOSE`d below) and each connecting client supplies its own
+# SAP OAuth bearer token — there is no shared logon to configure at the
+# container level for that mode.
 #
 # Both logon modes work in here. A certificate needs nothing from the image —
 # it is presented in the TLS handshake, which Node does natively. Kerberos needs
@@ -10,7 +16,7 @@
 # up: a curl built against GSS-API, a krb5 configuration, and a credential.
 # See docs/Authentication.md §7.
 
-FROM node:22-bookworm-slim AS builder
+FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -26,7 +32,7 @@ COPY src ./src
 # Prune in the same layer, so the devDependencies never reach the runner.
 RUN npm run build && npm prune --omit=dev
 
-FROM node:22-bookworm-slim AS runner
+FROM node:24-bookworm-slim AS runner
 
 ENV NODE_ENV=production
 WORKDIR /app
@@ -47,8 +53,8 @@ WORKDIR /app
 # installed" — a test the entrypoint depends on.
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        curl \
-        krb5-user \
+    curl \
+    krb5-user \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/krb5.conf
 
@@ -75,6 +81,10 @@ RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh
 # and owns nothing else. Override it to point at a ticket cache mounted from the
 # host: `-e KRB5CCNAME=FILE:/krb5/ccache`.
 ENV KRB5CCNAME=FILE:/tmp/krb5cc
+
+# Only listened on in Streamable HTTP mode (ABAP_MCP_TRANSPORT=http); harmless
+# to publish otherwise, since stdio mode never opens it.
+EXPOSE 3000
 
 USER node
 

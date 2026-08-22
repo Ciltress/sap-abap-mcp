@@ -34,7 +34,14 @@ try {
 }
 ') || die "Could not decide which authentication mode to use (see above)."
 
-if [ "$mode" = "kerberos" ]; then
+# In Streamable HTTP mode (ABAP_MCP_TRANSPORT=http) the mode above describes
+# nothing real: every session logs on with the SAP OAuth token its own client
+# supplied on `initialize`, never with resolveAuthMode()'s pick. Skip the
+# Kerberos setup below in that case - without it, a container started with
+# ABAP_MCP_TRANSPORT=http and no SAP_CERT_FILE/SAP_OAUTH_*/SAP_PASSWORD set
+# would trip resolveAuthMode()'s kerberos default and fail on a missing
+# SAP_KRB_REALM it will never use.
+if [ "$mode" = "kerberos" ] && [ "${ABAP_MCP_TRANSPORT:-stdio}" != "http" ]; then
 
   # Node cannot do SPNEGO, so both the logon (src/sso.ts) and the two-layer probe
   # behind healthcheck (src/reachability.ts) shell out to curl. It has to be one
