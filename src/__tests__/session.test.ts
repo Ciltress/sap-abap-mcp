@@ -1,13 +1,17 @@
+import { vi, type MockedFunction } from 'vitest';
 import { createSessionSource, fixedSessionSource } from '../session';
 import { CertificateAuthError } from '../certauth';
 import { bootstrapSsoSession } from '../sso';
 
-jest.mock('../sso', () => ({
-    ...jest.requireActual('../sso'),
-    bootstrapSsoSession: jest.fn()
+// importActual is a promise under vitest, so the factory is async — everything
+// else about the partial mock is unchanged: the real module, with only
+// bootstrapSsoSession replaced.
+vi.mock('../sso', async () => ({
+    ...(await vi.importActual<typeof import('../sso')>('../sso')),
+    bootstrapSsoSession: vi.fn()
 }));
 
-const bootstrapMock = bootstrapSsoSession as jest.MockedFunction<typeof bootstrapSsoSession>;
+const bootstrapMock = bootstrapSsoSession as MockedFunction<typeof bootstrapSsoSession>;
 
 /**
  * The seam between "this server needs a session" and "here is how you get one".
@@ -108,7 +112,10 @@ describe('the RFC fallback', () => {
     const session = { cookies: new Map([['SAP_SESSIONID_DEV_100', 'x=1']]), csrfToken: 'tok' };
     const withFallback = { ...KERBEROS_ENV, ABAP_MCP_RFC_FALLBACK: '1' };
 
-    beforeEach(() => bootstrapMock.mockReset());
+    // Braces, not an expression body: vitest treats whatever a hook returns as a
+    // teardown function, and mockReset() returns the mock — which vitest would
+    // then call after each test, rejecting into nobody's catch.
+    beforeEach(() => { bootstrapMock.mockReset(); });
 
     const pathsTried = () => bootstrapMock.mock.calls.map(([cfg]) => cfg.bootstrapPath);
 

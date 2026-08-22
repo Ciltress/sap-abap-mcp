@@ -8,6 +8,7 @@ import {
 } from '../lib/profiles';
 import type { ProfileName } from '../lib/profiles';
 import type { ToolDefinition } from '../types/tools';
+import * as handlers from '../handlers/index.js';
 
 const tool = (name: string): ToolDefinition => ({
     name,
@@ -151,25 +152,19 @@ describe('profile definitions', () => {
 describe('profiles against the real handlers', () => {
     it('names only tools the handlers actually provide', () => {
         // Guards the rename step: every profile member must exist somewhere.
-        const handlerDir = require('path').join(__dirname, '..', 'handlers');
-        const files: string[] = require('fs')
-            .readdirSync(handlerDir)
-            .filter((f: string) => f.endsWith('Handlers.ts'));
-
+        // Read from the handlers barrel rather than by scanning the directory —
+        // ESM has no synchronous require for a path computed at run time.
         const available = new Set<string>();
-        for (const file of files) {
-            const mod = require(require('path').join(handlerDir, file));
-            for (const key of Object.keys(mod)) {
-                const ctor = mod[key];
-                if (typeof ctor !== 'function' || !ctor.prototype?.getTools) continue;
-                let tools: ToolDefinition[] = [];
-                try {
-                    tools = Object.create(ctor.prototype).getTools() ?? [];
-                } catch {
-                    continue;
-                }
-                for (const t of tools) available.add(t.name);
+        for (const key of Object.keys(handlers)) {
+            const ctor = (handlers as Record<string, any>)[key];
+            if (typeof ctor !== 'function' || !ctor.prototype?.getTools) continue;
+            let tools: ToolDefinition[] = [];
+            try {
+                tools = Object.create(ctor.prototype).getTools() ?? [];
+            } catch {
+                continue;
             }
+            for (const t of tools) available.add(t.name);
         }
 
         expect(available.size).toBeGreaterThan(100);

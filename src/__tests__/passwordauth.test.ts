@@ -76,7 +76,7 @@ describe('interpretPasswordResponse', () => {
         // second failed logon, and three of them lock the user.
         try {
             interpretPasswordResponse(401, {}, 'CLAUDEAGENT');
-            fail('expected a rejection');
+            expect.fail('expected a rejection');
         } catch (error) {
             expect(error).toBeInstanceOf(PasswordAuthError);
             expect((error as PasswordAuthError).permanent).toBe(true);
@@ -104,7 +104,7 @@ describe('interpretPasswordResponse', () => {
         // password that was right, and spend logon attempts proving it.
         try {
             interpretPasswordResponse(403, {}, 'CLAUDEAGENT');
-            fail('expected a rejection');
+            expect.fail('expected a rejection');
         } catch (error) {
             expect((error as PasswordAuthError).permanent).toBe(true);
             expect((error as Error).message).toMatch(/S_DEVELOP/);
@@ -116,7 +116,7 @@ describe('interpretPasswordResponse', () => {
         // A 500 is worth trying again; it costs no logon attempt.
         try {
             interpretPasswordResponse(500, {}, 'USER');
-            fail('expected a rejection');
+            expect.fail('expected a rejection');
         } catch (error) {
             expect((error as PasswordAuthError).permanent).toBe(false);
         }

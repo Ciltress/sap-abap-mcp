@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { ADTClient } from 'abap-adt-api';
 import { ObjectHandlers } from '../handlers/ObjectHandlers';
@@ -118,8 +119,8 @@ const edit = async (handler: ObjectHandlers, args: any) => {
 
 const methodsOf = (calls: { method: string }[]) => calls.map(c => c.method);
 
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('editAbapSource', () => {

@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import type { ADTClient } from 'abap-adt-api';
 import { ObjectHandlers } from '../handlers/ObjectHandlers';
 import { DdicHandlers } from '../handlers/DdicHandlers';
@@ -97,8 +98,8 @@ async function readObject(handler: ObjectHandlers, args: any) {
     return JSON.parse(envelope.content[0].text).object;
 }
 
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('readAbapObject', () => {

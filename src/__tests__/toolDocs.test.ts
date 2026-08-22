@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import {
     collectToolFamilies,
     renderToolReference,
@@ -7,7 +8,7 @@ import {
 } from '../lib/toolDocs';
 import type { ToolDefinition } from '../types/tools';
 
-const ROOT = path.resolve(__dirname, '..', '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const tool = (name: string, over: Partial<ToolDefinition> = {}): ToolDefinition => ({
     name,

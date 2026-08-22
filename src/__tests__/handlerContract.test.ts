@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import type { ADTClient } from 'abap-adt-api';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { BaseHandler } from '../handlers/BaseHandler';
@@ -308,8 +309,8 @@ const FAILURE_IN_PAYLOAD: Record<string, (payload: any) => void> = {
     }
 };
 
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('every tool honours the response contract', () => {

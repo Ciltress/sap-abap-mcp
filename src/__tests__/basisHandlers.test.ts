@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import type { ADTClient } from 'abap-adt-api';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { BasisHandlers } from '../handlers/BasisHandlers';
@@ -47,8 +48,8 @@ async function listUsers(handler: BasisHandlers, args: any = {}) {
     return JSON.parse(envelope.content[0].text);
 }
 
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('listLoggedOnUsers', () => {

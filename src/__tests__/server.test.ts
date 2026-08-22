@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { adtException } from 'abap-adt-api';
@@ -138,8 +139,8 @@ async function connect(
     };
 }
 
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('a credential SAP has rejected', () => {

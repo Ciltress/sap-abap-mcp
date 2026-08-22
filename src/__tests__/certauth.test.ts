@@ -303,7 +303,9 @@ describe('bootstrapCertificateSession', () => {
     const openssl = (...args: string[]) => execFileSync('openssl', args, { cwd: dir, stdio: 'pipe' });
     const file = (name: string) => path.join(dir, name);
 
-    beforeAll(done => {
+    // vitest has no `done` callback, so the two async steps below — the
+    // listen and, in afterAll, the close — are awaited as promises instead.
+    beforeAll(async () => {
         dir = fs.mkdtempSync(path.join(os.tmpdir(), 'certauth-'));
 
         // A throwaway CA, a localhost server certificate and a client
@@ -349,16 +351,20 @@ describe('bootstrapCertificateSession', () => {
             }
         );
 
-        server.listen(0, '127.0.0.1', () => {
-            baseUrl = `https://localhost:${(server.address() as AddressInfo).port}`;
-            done();
+        await new Promise<void>(resolve => {
+            server.listen(0, '127.0.0.1', () => {
+                baseUrl = `https://localhost:${(server.address() as AddressInfo).port}`;
+                resolve();
+            });
         });
     }, 60_000);
 
-    afterAll(done => {
-        server.close(() => {
-            fs.rmSync(dir, { recursive: true, force: true });
-            done();
+    afterAll(async () => {
+        await new Promise<void>(resolve => {
+            server.close(() => {
+                fs.rmSync(dir, { recursive: true, force: true });
+                resolve();
+            });
         });
     });
 

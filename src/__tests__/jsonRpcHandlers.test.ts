@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import { adtException } from 'abap-adt-api';
 import type { ADTClient } from 'abap-adt-api';
 import type { HttpClientResponse, RequestOptions } from 'abap-adt-api/build/AdtHTTP';
@@ -221,8 +222,8 @@ function handlerOver(node: FakeJsonRpcNode, stubs?: AdtStubs) {
 }
 
 // Every handler logs to stderr via lib/logger; keep the test output readable.
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('signature lookup', () => {

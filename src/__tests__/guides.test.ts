@@ -1,3 +1,4 @@
+import { vi, type MockInstance } from 'vitest';
 import type { ADTClient } from 'abap-adt-api';
 import { DocsHandlers } from '../handlers/DocsHandlers';
 import {
@@ -47,8 +48,8 @@ const SAMPLE = [
     'Trailing body.'
 ].join('\n');
 
-let consoleError: jest.SpyInstance;
-beforeAll(() => { consoleError = jest.spyOn(console, 'error').mockImplementation(() => { }); });
+let consoleError: MockInstance;
+beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
 describe('listSections', () => {

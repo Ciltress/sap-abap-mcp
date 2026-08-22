@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * server.json — the MCP registry manifest — held against the code it describes.
@@ -18,7 +19,7 @@ import path from 'path';
  * feature nobody can configure, and a declared one that nothing reads is a lie.
  */
 
-const ROOT = path.resolve(__dirname, '../..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'server.json'), 'utf8'));
 const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
