@@ -2,6 +2,7 @@
   "name": "mcp-abap-abap-adt-api",
   "version": "0.1.1",
   "mcpName": "io.github.mario-andreschak/mcp-abap-abap-adt-api",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "mcp-abap-abap-adt-api": "dist/index.js"
@@ -13,9 +14,9 @@
     "AGENTS.md"
   ],
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "build": "tsc -p tsconfig.json",
     "start": "node ./dist/index.js",
     "dev": "npx @modelcontextprotocol/inspector ./dist/index.js",
@@ -53,10 +54,9 @@
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.10.10",
-    "jest": "^30.4.2",
-    "ts-jest": "^29.4.12",
-    "typescript": "^6.0.3"
+    "@vitest/coverage-v8": "^4.1.11",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
   }
 }
