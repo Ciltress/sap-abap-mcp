@@ -27,16 +27,16 @@ tools that would answer 400. On DEV that leaves 116.
 
 ## Documentation
 
-| Document | What it covers |
-| --- | --- |
-| [`AGENTS.md`](AGENTS.md) | Working **on** this repository: layout, conventions, how to test. Read this before changing code. |
-| [`docs/Tool-Router.md`](docs/Tool-Router.md) | **What you want to do → the tool that does it.** Hand-written, in the words people use. Start here if you know the job but not the tool. |
-| [`docs/Tool-Reference.md`](docs/Tool-Reference.md) | All 128 tools with their arguments, grouped by family. Generated from the tool definitions, so it cannot drift from the code. |
-| [`docs/MCP-Tools.md`](docs/MCP-Tools.md) | **How the server behaves.** The profiles, golden-path workflows, ADT URI and lock semantics, the response/error model, and a troubleshooting matrix. Written for humans *and* for agents driving the server. |
-| [`docs/ABAP-Skills.md`](docs/ABAP-Skills.md) | The 20 SAP/ABAP skills and how they map onto these tools. |
-| [`docs/Development-Skills.md`](docs/Development-Skills.md) | The 35 bundled general engineering skills. |
-| [`docs/JSON-RPC.md`](docs/JSON-RPC.md) | Design and protocol notes for the JSON-RPC / RFC tools, read from the ABAP source of `/IWBEP/CL_JSRPC_*`: the wire protocol, the LUW guarantee behind batches, and the traps. |
-| [`docs/Authentication.md`](docs/Authentication.md) | The two password-less logon modes: Kerberos SSO, and X.509 certificates for service and technical users. What SAP needs configured, and why this is mutual TLS rather than SNC. |
+| Document                                                   | What it covers                                                                                                                                                                                               |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`AGENTS.md`](AGENTS.md)                                   | Working **on** this repository: layout, conventions, how to test. Read this before changing code.                                                                                                            |
+| [`docs/Tool-Router.md`](docs/Tool-Router.md)               | **What you want to do → the tool that does it.** Hand-written, in the words people use. Start here if you know the job but not the tool.                                                                     |
+| [`docs/Tool-Reference.md`](docs/Tool-Reference.md)         | All 128 tools with their arguments, grouped by family. Generated from the tool definitions, so it cannot drift from the code.                                                                                |
+| [`docs/MCP-Tools.md`](docs/MCP-Tools.md)                   | **How the server behaves.** The profiles, golden-path workflows, ADT URI and lock semantics, the response/error model, and a troubleshooting matrix. Written for humans _and_ for agents driving the server. |
+| [`docs/ABAP-Skills.md`](docs/ABAP-Skills.md)               | The 20 SAP/ABAP skills and how they map onto these tools.                                                                                                                                                    |
+| [`docs/Development-Skills.md`](docs/Development-Skills.md) | The 35 bundled general engineering skills.                                                                                                                                                                   |
+| [`docs/JSON-RPC.md`](docs/JSON-RPC.md)                     | Design and protocol notes for the JSON-RPC / RFC tools, read from the ABAP source of `/IWBEP/CL_JSRPC_*`: the wire protocol, the LUW guarantee behind batches, and the traps.                                |
+| [`docs/Authentication.md`](docs/Authentication.md)         | The two password-less logon modes: Kerberos SSO, and X.509 certificates for service and technical users. What SAP needs configured, and why this is mutual TLS rather than SNC.                              |
 
 ---
 
@@ -45,6 +45,11 @@ tools that would answer 400. On DEV that leaves 116.
 - **Two password-less logon modes** — SPNEGO/Kerberos with the logged-on Windows user's ticket, or an
   X.509 client certificate for a service or technical user that has no Kerberos identity. No SAP
   password is stored or sent either way, and both self-heal when the session expires.
+- **Streamable HTTP transport, for a team sharing one container** — set `ABAP_MCP_TRANSPORT=http` and
+  each connecting MCP client authenticates with its own SAP OAuth 2.0 bearer token, so every session
+  gets its own SAP logon rather than everyone sharing one technical user. stdio remains the default
+  for a single, locally-started client. See [§12](docs/Authentication.md#12-streamable-http-transport-and-per-connection-sessions)
+  and [Running over HTTP](#running-over-http) below.
 - **Read any object by name** — `readAbapObject` resolves a name to its source in one call; no ADT URL
   to discover or hand-craft.
 - **Describe a table** — `describeAbapTable` returns fields, DDIC types, key flags and check tables.
@@ -102,7 +107,7 @@ npm run build
 > that directory is empty and the server offers 35 fewer skills. Already cloned? Run
 > `git submodule update --init --recursive`.
 
-> The `npx mcp-abap-abap-adt-api` package on npm is the **upstream** server and does *not* include the
+> The `npx mcp-abap-abap-adt-api` package on npm is the **upstream** server and does _not_ include the
 > SSO bootstrap or the RFC tools. Build this repository from source instead.
 
 ### Configure
@@ -121,17 +126,20 @@ Three of the four logon modes need **no** `SAP_PASSWORD` at all.
 
 Never commit `.env`; it is already in `.gitignore`.
 
-| Optional variable | Effect |
-| --- | --- |
-| `SAP_SYSTEM_ID` | The system id, as in `sy-sysid` (e.g. `DEV`). Announced at connect time so a client can pick between several servers by name. See [More than one system](#more-than-one-system). |
-| `NODE_TLS_REJECT_UNAUTHORIZED=0` | Accept a certificate from an internal/unknown CA. Development only. |
-| `SSO_CURL_PATH` | Path to a curl binary with SPNEGO support, if not the Windows system one. |
-| `SAP_JSONRPC_PATH` | Override the JSON-RPC ICF path when the node is published under an alias. |
-| `ABAP_MCP_PROFILE` | Which tools this server lists — and therefore which it will answer. See below. |
-| `ABAP_MCP_MAX_RESPONSE_BYTES` | Ceiling on a single answer, in bytes. `0` removes it. |
-| `ABAP_MCP_GATE` | `off` skips the startup capability check that withholds tools this release cannot serve. |
-| `ABAP_MCP_RFC_FALLBACK` | Start even when SAP refuses this user the ADT node, keeping the RFC tools. See [docs/Authentication.md](docs/Authentication.md). |
-| `SAP_FALLBACK_BOOTSTRAP_PATH` | Which ICF node that fallback logs on to. Only needs to issue a session cookie and a CSRF token. |
+| Optional variable                | Effect                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SAP_SYSTEM_ID`                  | The system id, as in `sy-sysid` (e.g. `DEV`). Announced at connect time so a client can pick between several servers by name. See [More than one system](#more-than-one-system). |
+| `NODE_TLS_REJECT_UNAUTHORIZED=0` | Accept a certificate from an internal/unknown CA. Development only.                                                                                                              |
+| `SSO_CURL_PATH`                  | Path to a curl binary with SPNEGO support, if not the Windows system one.                                                                                                        |
+| `SAP_JSONRPC_PATH`               | Override the JSON-RPC ICF path when the node is published under an alias.                                                                                                        |
+| `ABAP_MCP_PROFILE`               | Which tools this server lists — and therefore which it will answer. See below.                                                                                                   |
+| `ABAP_MCP_MAX_RESPONSE_BYTES`    | Ceiling on a single answer, in bytes. `0` removes it.                                                                                                                            |
+| `ABAP_MCP_GATE`                  | `off` skips the startup capability check that withholds tools this release cannot serve.                                                                                         |
+| `ABAP_MCP_RFC_FALLBACK`          | Start even when SAP refuses this user the ADT node, keeping the RFC tools. See [docs/Authentication.md](docs/Authentication.md).                                                 |
+| `SAP_FALLBACK_BOOTSTRAP_PATH`    | Which ICF node that fallback logs on to. Only needs to issue a session cookie and a CSRF token.                                                                                  |
+| `ABAP_MCP_TRANSPORT`             | `stdio` (default) or `http`. See [Running over HTTP](#running-over-http).                                                                                                        |
+| `ABAP_MCP_HTTP_PORT`             | Port for the Streamable HTTP endpoint. Default `3000`. Only read in `http` mode.                                                                                                 |
+| `ABAP_MCP_HTTP_HOST`             | Address to bind in `http` mode. Default `0.0.0.0`.                                                                                                                               |
 
 #### Sizing the server for its client
 
@@ -142,25 +150,25 @@ conversation starts, and that is where "the same prompt works half the time" com
 
 **`ABAP_MCP_PROFILE`** — unset means `all`, so an existing setup is unchanged.
 
-| profile | `tools/list` | cost per turn | for |
-| --- | --- | --- | --- |
-| `core` | 9 | ~2,737 tokens | reading a system and completing one edit |
-| `analyst` | 18 | ~3,982 tokens | read-only: dictionary, table data, RFC calls |
-| `rfc` | 10 | ~2,900 tokens | a user with RFC rights but no `S_DEVELOP`, where ADT tools cannot work |
-| `dev` | 49 | ~8,034 tokens | the edit cycle plus tests, ATC, transports, refactoring |
-| `all` | 129 | ~17,759 tokens | the default; right for clients that fetch schemas on demand |
+| profile   | `tools/list` | cost per turn  | for                                                                    |
+| --------- | ------------ | -------------- | ---------------------------------------------------------------------- |
+| `core`    | 9            | ~2,737 tokens  | reading a system and completing one edit                               |
+| `analyst` | 18           | ~3,982 tokens  | read-only: dictionary, table data, RFC calls                           |
+| `rfc`     | 10           | ~2,900 tokens  | a user with RFC rights but no `S_DEVELOP`, where ADT tools cannot work |
+| `dev`     | 49           | ~8,034 tokens  | the edit cycle plus tests, ATC, transports, refactoring                |
+| `all`     | 129          | ~17,759 tokens | the default; right for clients that fetch schemas on demand            |
 
 Counts include `healthcheck`, which sits outside every profile because it is the tool that answers
 "which profile am I running?".
 
-A profile is **not** a convenience filter. A tool outside the active profile is not listed *and* not
+A profile is **not** a convenience filter. A tool outside the active profile is not listed _and_ not
 routed, so it cannot be called — which is what makes `analyst` a guarantee that nothing edits source
 rather than a smaller menu. Out-of-profile calls get an error that says so, instead of "unknown tool",
 so there is no point retrying. An unrecognised profile name stops the server at startup rather than
 falling back to `all` — silently serving 129 tools to something that asked for 9 is the exact failure
 profiles exist to prevent.
 
-`core` is small because one tool, `editAbapSource`, *is* the write cycle: lock, write, activate, unlock,
+`core` is small because one tool, `editAbapSource`, _is_ the write cycle: lock, write, activate, unlock,
 releasing the lock even when a step fails. The four separate steps stay in `dev` and `all`.
 
 **`ABAP_MCP_MAX_RESPONSE_BYTES`** — the tool list is a fixed cost a profile can shrink; an answer is
@@ -189,11 +197,11 @@ SAP_CERT_FILE=C:\Users\svc_agent\SNC\sec\claudeagent.p12
 SAP_CERT_PASSPHRASE=<PKCS#12 password / PSE PIN>
 ```
 
-| Optional variable | Effect |
-| --- | --- |
-| `SAP_AUTH_MODE` | `kerberos`, `certificate`, `oauth` or `password`. Only needed to force one mode while another is configured. |
-| `SAP_CERT_KEY_FILE` | The private key, when it is not in `SAP_CERT_FILE`. |
-| `SAP_CA_FILE` | CA bundle for verifying SAP's own certificate, instead of disabling TLS verification. |
+| Optional variable   | Effect                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `SAP_AUTH_MODE`     | `kerberos`, `certificate`, `oauth` or `password`. Only needed to force one mode while another is configured. |
+| `SAP_CERT_KEY_FILE` | The private key, when it is not in `SAP_CERT_FILE`.                                                          |
+| `SAP_CA_FILE`       | CA bundle for verifying SAP's own certificate, instead of disabling TLS verification.                        |
 
 > This is **mutual TLS, not SNC** — ADT is HTTPS. A certificate that already works for RFC/SNC can be
 > reused and its `CERTRULE` mapping carries over, but the `SNC0` ACL plays no part and the ICM needs
@@ -214,17 +222,17 @@ SAP_OAUTH_CLIENT_SECRET=<'clientsecret'>
 On-premise the endpoint is on the SAP host itself — `https://<host>:<port>/sap/bc/sec/oauth2/token` —
 and the client is the one registered in `SOAUTH2`.
 
-| Optional variable | Effect |
-| --- | --- |
-| `SAP_OAUTH_GRANT` | `client_credentials` (default), `refresh_token`, `password` or `static`. |
-| `SAP_OAUTH_SCOPE` | Scopes to request. Unset asks for the client's defaults, which is usually right. |
-| `SAP_OAUTH_REFRESH_TOKEN` | For the `refresh_token` grant; selects it by itself. |
-| `SAP_OAUTH_TOKEN` | A token minted elsewhere, used as-is. Nothing can renew it. |
-| `SAP_OAUTH_CLIENT_AUTH` | `basic` (default) or `post`, when a server rejects a secret that is right. |
+| Optional variable         | Effect                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| `SAP_OAUTH_GRANT`         | `client_credentials` (default), `refresh_token`, `password` or `static`.         |
+| `SAP_OAUTH_SCOPE`         | Scopes to request. Unset asks for the client's defaults, which is usually right. |
+| `SAP_OAUTH_REFRESH_TOKEN` | For the `refresh_token` grant; selects it by itself.                             |
+| `SAP_OAUTH_TOKEN`         | A token minted elsewhere, used as-is. Nothing can renew it.                      |
+| `SAP_OAUTH_CLIENT_AUTH`   | `basic` (default) or `post`, when a server rejects a secret that is right.       |
 
 > **The token logs on once.** After that the SAP session cookie carries every request, as in the
 > other modes — so a token that expires in five minutes is not a problem. Note that an OAuth 2.0
-> client on AS ABAP *is* a user in `SU01`: a wrong `SAP_OAUTH_CLIENT_SECRET` counts against
+> client on AS ABAP _is_ a user in `SU01`: a wrong `SAP_OAUTH_CLIENT_SECRET` counts against
 > `login/fails_to_user_lock` like a password, so a refused token request is never retried. The
 > authorization-code flow is not implemented — it needs a browser, which a server started over stdio
 > has no way to open; complete it once by hand and pass the refresh token in.
@@ -241,7 +249,7 @@ SAP_PASSWORD=<the password>
 ```
 
 > **The last resort, and not interchangeable with the other two.** A missing ticket or an unmapped
-> certificate is simply refused; a *wrong password* counts against `login/fails_to_user_lock` and
+> certificate is simply refused; a _wrong password_ counts against `login/fails_to_user_lock` and
 > locks that user for every consumer of it, not just this server. The implementation refuses to retry
 > a rejected password for that reason — one failed logon, latched, however many tools are called.
 > Prefer a certificate for anything unattended. [`docs/Authentication.md` §10](docs/Authentication.md)
@@ -280,8 +288,10 @@ For a client that carries every tool schema on every turn, add a profile to that
 
 ### In Docker
 
-The server speaks MCP over **stdio**, so there is no port to publish — the client starts the container
-and talks to it over stdin/stdout.
+By default the server speaks MCP over **stdio**, so there is no port to publish — the client starts
+the container and talks to it over stdin/stdout. This section covers that default; for a container
+several team members connect to over the network instead, see [Running over HTTP](#running-over-http)
+below.
 
 ```bash
 docker build -t abap-adt-mcp .
@@ -292,19 +302,26 @@ docker build -t abap-adt-mcp .
   "mcpServers": {
     "sap-abap-dev-100": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "--env-file", "C:/path/to/.env", "abap-adt-mcp"]
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--env-file",
+        "C:/path/to/.env",
+        "abap-adt-mcp"
+      ]
     }
   }
 }
 ```
 
-**All four logon modes work in here**, but a credential is something the container has to be *given*,
+**All four logon modes work in here**, but a credential is something the container has to be _given_,
 and `--env-file` is not dotenv — Docker strips no quotes, reads no `export`, and drops no trailing
 `# comment`, so a value dotenv would have cleaned up arrives verbatim. Windows paths in `.env` have
 to be replaced by the mounted ones. Kerberos is the mode that needs the most from the container and
 OAuth the least: a token is fetched over the network, so nothing has to be mounted at all.
 
-**Certificate mode** — mount the key material read-only, and the CA that signs *SAP's* certificate
+**Certificate mode** — mount the key material read-only, and the CA that signs _SAP's_ certificate
 with it:
 
 ```bash
@@ -342,7 +359,7 @@ docker run -i --rm --env-file .env \
 ```bash
 docker run -i --rm --env-file .env \
   -e SAP_USER=YourUser \
-  -e SAP_PASSWORD=YourPassword \ 
+  -e SAP_PASSWORD=YourPassword \
   abap-adt-mcp
 ```
 
@@ -375,6 +392,64 @@ docker run --rm --env-file .env -v /host/agent.keytab:/krb5/agent.keytab:ro \
 `docs/`, `skills/` and `AGENTS.md` are copied into the image on purpose — the server reads them at
 runtime to serve `readServerGuide`, `readSkill` and the `abap-adt://` resources.
 [`docs/Authentication.md` §7](docs/Authentication.md) has the full container setup, mode by mode.
+
+### Running over HTTP
+
+Everything above starts one server for one client over stdio. Set `ABAP_MCP_TRANSPORT=http` instead to
+run a long-lived container that a whole team connects to over the network, using the SDK's Streamable
+HTTP transport at `/mcp`.
+
+HTTP mode changes _who logs on_, not what a session can do once logged on: none of the four modes
+above — `SAP_AUTH_MODE`, `SAP_CERT_FILE`, `SAP_OAUTH_CLIENT_ID`, `SAP_PASSWORD` — apply here, because
+there is no single shared logon to configure. Instead, **every MCP client authenticates with its own
+SAP OAuth 2.0 bearer token**: it sends `Authorization: Bearer <token>` on `initialize`, and that token
+becomes that session's own SAP identity — its own ADT logon, its own locks, its own audit trail. Two
+team members connecting at once get two independent sessions, never one shared technical user.
+
+```bash
+docker build -t abap-adt-mcp .
+docker run --rm -p 3000:3000 \
+  -e SAP_URL=https://your-sap-server.example.com:44301 \
+  -e SAP_USER=CLAUDEAGENT \
+  -e SAP_CLIENT=100 \
+  -e ABAP_MCP_TRANSPORT=http \
+  abap-adt-mcp
+```
+
+`SAP_USER` is still required (every non-password mode needs a placeholder username to construct the
+ADT client) but is never transmitted and has no bearing on who a given session actually is — SAP
+decides that from each session's own token, same as in [§11](docs/Authentication.md#11-oauth-20-mode).
+
+| Variable                  | Effect                                  |
+| ------------------------- | --------------------------------------- |
+| `ABAP_MCP_TRANSPORT=http` | Switches from stdio to Streamable HTTP. |
+| `ABAP_MCP_HTTP_PORT`      | Port to listen on. Default `3000`.      |
+| `ABAP_MCP_HTTP_HOST`      | Address to bind. Default `0.0.0.0`.     |
+
+Register a client the same way as any remote Streamable HTTP MCP server, pointing it at `/mcp` and
+supplying that user's own SAP OAuth token:
+
+```json
+{
+  "mcpServers": {
+    "sap-abap-dev-100": {
+      "url": "http://your-host:3000/mcp",
+      "headers": { "Authorization": "Bearer <your SAP OAuth access token>" }
+    }
+  }
+}
+```
+
+A missing or malformed `Authorization` header is rejected with `401` before any SAP traffic; a token
+SAP itself refuses is also `401`, with SAP's own message. There is no separate shared secret to
+configure for the transport itself — the SAP token _is_ the access control.
+
+The container's `docker-entrypoint.sh` skips its Kerberos setup automatically when
+`ABAP_MCP_TRANSPORT=http` is set, since `resolveAuthMode()`'s pick describes nothing real once every
+session logs on with its own token. CORS, DNS-rebinding protection, TLS termination and rate limiting
+are left to whatever sits in front of the container (a reverse proxy or ingress), the same as for any
+other internal HTTP service. Full detail, including the OAuth `static`-grant mechanics this reduces
+to, is in [`docs/Authentication.md` §12](docs/Authentication.md#12-streamable-http-transport-and-per-connection-sessions).
 
 ### More than one system
 
@@ -417,7 +492,7 @@ Read any object by name — no URL discovery needed:
 Survey a whole naming convention — patterns are normalised for you, so `zpp_lab` becomes `ZPP_LAB*`:
 
 ```jsonc
-{"tool":"searchPackages","args":{"patterns":["ZPP_*","Z_PP*"]}}
+{ "tool": "searchPackages", "args": { "patterns": ["ZPP_*", "Z_PP*"] } }
 // -> each package with its objects grouped by type, sub-packages, and a `truncated` flag
 ```
 
@@ -433,10 +508,21 @@ A BAPI and its commit must travel in **one** batch, or the commit lands in its o
 changes are lost:
 
 ```jsonc
-{"tool":"callFunctionsViaJsonRpc","args":{"calls":[
-  {"functionModuleName":"BAPI_USER_LOCK","inputParameters":{"USERNAME":"DEVUSER"}},
-  {"functionModuleName":"BAPI_TRANSACTION_COMMIT","inputParameters":{"WAIT":"X"}}
-]}}
+{
+  "tool": "callFunctionsViaJsonRpc",
+  "args": {
+    "calls": [
+      {
+        "functionModuleName": "BAPI_USER_LOCK",
+        "inputParameters": { "USERNAME": "DEVUSER" },
+      },
+      {
+        "functionModuleName": "BAPI_TRANSACTION_COMMIT",
+        "inputParameters": { "WAIT": "X" },
+      },
+    ],
+  },
+}
 ```
 
 The full write cycle (lock → modify → check → activate → unlock), the debugger, ATC and every other
@@ -448,11 +534,11 @@ workflow are in [`docs/MCP-Tools.md` §4](docs/MCP-Tools.md#4-golden-paths).
 
 Three tools cover most of what you need, and each takes a **name** rather than an ADT URL:
 
-| Want | Tool |
-| --- | --- |
-| The source of a class, program, include, function group or module | `readAbapObject` |
-| What a table, structure or view looks like | `describeAbapTable` |
-| Everything behind a naming convention | `searchPackages` |
+| Want                                                              | Tool                |
+| ----------------------------------------------------------------- | ------------------- |
+| The source of a class, program, include, function group or module | `readAbapObject`    |
+| What a table, structure or view looks like                        | `describeAbapTable` |
+| Everything behind a naming convention                             | `searchPackages`    |
 
 ```jsonc
 {"tool":"readAbapObject",   "args":{"objectName":"ZCL_MY_CLASS"}}
@@ -460,7 +546,7 @@ Three tools cover most of what you need, and each takes a **name** rather than a
 {"tool":"searchPackages",   "args":{"patterns":["ZPP_*","Z_PP*"]}}
 ```
 
-`readAbapObject` returns the metadata *and* the source in one call. When a name belongs to several
+`readAbapObject` returns the metadata _and_ the source in one call. When a name belongs to several
 objects — `ZPP_EXT_LABEL_DATA` is both a function group and a function module — it picks the more
 specific one and tells you, via `ambiguous:true` and `alternatives`; pass `objectType` to force the
 choice. Objects with no source come back with `hasSource:false` and a pointer to the right tool.
@@ -516,15 +602,15 @@ Adding a tool is a one-file change — see [`docs/MCP-Tools.md` §10](docs/MCP-T
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
-| --- | --- |
-| `HTTP 401` on every call | Kerberos mode: no valid ticket, or the system does not accept SPNEGO — check `klist` and your VPN/domain connection. Certificate mode: see [`docs/Authentication.md` §6](docs/Authentication.md). |
-| `curl nicht gefunden` | The SSO bootstrap could not find curl — set `SSO_CURL_PATH`. |
-| `SAP rejected the client certificate` | The `CERTRULE` mapping, `icm/HTTPS/verify_client`, or the CA trust in `STRUST`. The error names the subject that was presented — compare it with `CERTRULE`. |
-| `unable to get local issuer certificate` | Internal CA. Set `NODE_TLS_REJECT_UNAUTHORIZED=0` (development only). |
-| RFC tools return `reachable:false` | Run `checkJsonRpcEndpoint`. It separates an inactive `/sap/gw/jsonrpc` SICF node from a CSRF or authorisation problem. |
-| `-32601` from a function module | It does not exist, is not RFC-enabled, or `S_RFC` denies its function group. |
-| Client shows no tools | Verify the absolute path to `dist/index.js` and that `npm run build` has run. |
+| Symptom                                  | Cause / fix                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HTTP 401` on every call                 | Kerberos mode: no valid ticket, or the system does not accept SPNEGO — check `klist` and your VPN/domain connection. Certificate mode: see [`docs/Authentication.md` §6](docs/Authentication.md). |
+| `curl nicht gefunden`                    | The SSO bootstrap could not find curl — set `SSO_CURL_PATH`.                                                                                                                                      |
+| `SAP rejected the client certificate`    | The `CERTRULE` mapping, `icm/HTTPS/verify_client`, or the CA trust in `STRUST`. The error names the subject that was presented — compare it with `CERTRULE`.                                      |
+| `unable to get local issuer certificate` | Internal CA. Set `NODE_TLS_REJECT_UNAUTHORIZED=0` (development only).                                                                                                                             |
+| RFC tools return `reachable:false`       | Run `checkJsonRpcEndpoint`. It separates an inactive `/sap/gw/jsonrpc` SICF node from a CSRF or authorisation problem.                                                                            |
+| `-32601` from a function module          | It does not exist, is not RFC-enabled, or `S_RFC` denies its function group.                                                                                                                      |
+| Client shows no tools                    | Verify the absolute path to `dist/index.js` and that `npm run build` has run.                                                                                                                     |
 
 More in [`docs/MCP-Tools.md` §8](docs/MCP-Tools.md#8-troubleshooting-matrix).
 

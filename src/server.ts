@@ -1,23 +1,47 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  isInitializeRequest,
   McpError,
-  ErrorCode
-} from "@modelcontextprotocol/sdk/types.js";
+  ErrorCode,
+} from '@modelcontextprotocol/sdk/types.js';
+import { randomUUID } from 'node:crypto';
+import {
+  createServer as createHttpServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
 import { GUIDES, guideByUri, guideUri, readGuideFile } from './lib/guides.js';
-import { describeSystem, resolveSystemIdentity, serverInstructions } from './lib/systemIdentity.js';
+import {
+  describeSystem,
+  resolveSystemIdentity,
+  serverInstructions,
+} from './lib/systemIdentity.js';
 import type { SystemIdentity } from './lib/systemIdentity.js';
-import { discoverSkills, readSkillFile, skillByUri, skillUri } from './lib/skills.js';
+import {
+  discoverSkills,
+  readSkillFile,
+  skillByUri,
+  skillUri,
+} from './lib/skills.js';
 import { applyProfile, resolveProfile } from './lib/profiles.js';
 import { capToolResult, resolveResponseBudget } from './lib/responseBudget.js';
 import { evaluateGate, gatingEnabled } from './lib/collectionGate.js';
 import type { GateResult } from './lib/collectionGate.js';
 import type { ProfileName } from './lib/profiles.js';
-import { ADTClient, session_types, isAdtError, isAdtException, isCsrfError, isLoginError } from "abap-adt-api";
+import {
+  ADTClient,
+  session_types,
+  isAdtError,
+  isAdtException,
+  isCsrfError,
+  isLoginError,
+} from 'abap-adt-api';
 import { injectSsoSession } from './sso.js';
 import { createSessionSource } from './session.js';
 import type { SessionSource } from './session.js';
@@ -76,6 +100,68 @@ const PING_TIMEOUT_MS = 5_000;
  */
 const STARTUP_PING_TIMEOUT_MS = 8_000;
 
+/** A body this large on /mcp is not a tool call; refusing it early is cheaper than parsing it. */
+const MAX_HTTP_BODY_BYTES = 10 * 1024 * 1024;
+
+/** `stdio` (the default, and everything this server has ever done) or `http`. */
+function resolveTransportMode(env: NodeJS.ProcessEnv): 'stdio' | 'http' {
+  const mode = String(env.ABAP_MCP_TRANSPORT ?? '')
+    .trim()
+    .toLowerCase();
+  return mode === 'http' ? 'http' : 'stdio';
+}
+
+/**
+ * The caller's own SAP OAuth access token — this server's only credential for
+ * an HTTP session, and the only thing that makes one team member's session
+ * distinct from another's. See runHttp().
+ */
+function extractBearerToken(req: IncomingMessage): string | undefined {
+  const header = req.headers.authorization;
+  const match =
+    typeof header === 'string' ? /^Bearer\s+(\S+)$/i.exec(header) : null;
+  return match?.[1];
+}
+
+/** Reads and JSON-parses the body of an HTTP request, capped against an unbounded body. */
+function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > MAX_HTTP_BODY_BYTES) {
+        req.destroy();
+        reject(new Error(`request body exceeds ${MAX_HTTP_BODY_BYTES} bytes`));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null'));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+/** A JSON-RPC error response on the raw HTTP layer — before any transport/session exists. */
+function writeJsonRpcError(
+  res: ServerResponse,
+  status: number,
+  code: number,
+  message: string,
+): void {
+  if (res.headersSent) return;
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(
+    JSON.stringify({ jsonrpc: '2.0', error: { code, message }, id: null }),
+  );
+}
+
 /**
  * Tool names that were renamed, kept callable so existing clients keep working.
  * Aliases are routable but deliberately not listed by tools/list.
@@ -117,75 +203,75 @@ export class AbapAdtServer extends Server {
   private objectDeletionHandlers: ObjectDeletionHandlers;
   private objectManagementHandlers: ObjectManagementHandlers;
   private objectRegistrationHandlers: ObjectRegistrationHandlers;
-    private nodeHandlers: NodeHandlers;
-    private discoveryHandlers: DiscoveryHandlers;
-    private unitTestHandlers: UnitTestHandlers;
-    private prettyPrinterHandlers: PrettyPrinterHandlers;
-    private gitHandlers: GitHandlers;
-    private ddicHandlers: DdicHandlers;
-    private serviceBindingHandlers: ServiceBindingHandlers;
-    private queryHandlers: QueryHandlers;
-    private feedHandlers: FeedHandlers;
-    private debugHandlers: DebugHandlers;
-    private renameHandlers: RenameHandlers;
-    private atcHandlers: AtcHandlers;
-    private traceHandlers: TraceHandlers;
-    private refactorHandlers: RefactorHandlers;
-    private revisionHandlers: RevisionHandlers;
-    private jsonRemoteFunctionCallHandlers: JsonRemoteFunctionCallHandlers;
-    private docsHandlers: DocsHandlers;
-    private skillsHandlers: SkillsHandlers;
-    private basisHandlers: BasisHandlers;
+  private nodeHandlers: NodeHandlers;
+  private discoveryHandlers: DiscoveryHandlers;
+  private unitTestHandlers: UnitTestHandlers;
+  private prettyPrinterHandlers: PrettyPrinterHandlers;
+  private gitHandlers: GitHandlers;
+  private ddicHandlers: DdicHandlers;
+  private serviceBindingHandlers: ServiceBindingHandlers;
+  private queryHandlers: QueryHandlers;
+  private feedHandlers: FeedHandlers;
+  private debugHandlers: DebugHandlers;
+  private renameHandlers: RenameHandlers;
+  private atcHandlers: AtcHandlers;
+  private traceHandlers: TraceHandlers;
+  private refactorHandlers: RefactorHandlers;
+  private revisionHandlers: RevisionHandlers;
+  private jsonRemoteFunctionCallHandlers: JsonRemoteFunctionCallHandlers;
+  private docsHandlers: DocsHandlers;
+  private skillsHandlers: SkillsHandlers;
+  private basisHandlers: BasisHandlers;
 
-    /** Where a session comes from: Kerberos, an X.509 certificate, an OAuth 2.0 token, or a password. */
-    private readonly sessionSource: SessionSource;
-    /** The identity presented, once a certificate session has been established. */
-    private certificate?: CertificateInfo;
-    /** The token a session was established with, in OAuth mode. Never the token itself. */
-    private oauth?: OAuthSessionInfo;
-    /**
-     * Set when the session came from the fallback node rather than ADT, i.e. SAP
-     * refused this user ADT but serves it elsewhere. The RFC/JSON-RPC tools work;
-     * everything routed through ADT will fail at call time.
-     */
-    private sessionViaFallback?: string;
-    /**
-     * Latched once SAP has rejected the credential itself, rather than aged a
-     * session out. Nothing tries again.
-     *
-     * This exists for password mode, and for the two OAuth failures that reach a
-     * SAP user record — a rejected client secret and a rejected password grant.
-     * The retry below treats 401 as "the session went stale" and re-establishes,
-     * which is right for a ticket that expired and ruinous for a password that
-     * has: every tool call would spend one more failed logon against
-     * login/fails_to_user_lock until the user is locked for everything that uses
-     * it. Failing the same way every time, without touching SAP, is the only
-     * safe answer.
-     */
-    private permanentAuthFailure?: Error;
-    /** Which SAP system and client this server is bound to. Refined once a session exists. */
-    private systemIdentity: SystemIdentity;
+  /** Where a session comes from: Kerberos, an X.509 certificate, an OAuth 2.0 token, or a password. */
+  private readonly sessionSource: SessionSource;
+  /** The identity presented, once a certificate session has been established. */
+  private certificate?: CertificateInfo;
+  /** The token a session was established with, in OAuth mode. Never the token itself. */
+  private oauth?: OAuthSessionInfo;
+  /**
+   * Set when the session came from the fallback node rather than ADT, i.e. SAP
+   * refused this user ADT but serves it elsewhere. The RFC/JSON-RPC tools work;
+   * everything routed through ADT will fail at call time.
+   */
+  private sessionViaFallback?: string;
+  /**
+   * Latched once SAP has rejected the credential itself, rather than aged a
+   * session out. Nothing tries again.
+   *
+   * This exists for password mode, and for the two OAuth failures that reach a
+   * SAP user record — a rejected client secret and a rejected password grant.
+   * The retry below treats 401 as "the session went stale" and re-establishes,
+   * which is right for a ticket that expired and ruinous for a password that
+   * has: every tool call would spend one more failed logon against
+   * login/fails_to_user_lock until the user is locked for everything that uses
+   * it. Failing the same way every time, without touching SAP, is the only
+   * safe answer.
+   */
+  private permanentAuthFailure?: Error;
+  /** Which SAP system and client this server is bound to. Refined once a session exists. */
+  private systemIdentity: SystemIdentity;
 
-    /** Every handler, in tools/list order. */
-    private handlers: BaseHandler[] = [];
-    /** tool name (and alias) -> owning handler. Built from getTools(), so a listed tool is always callable. */
-    private readonly toolRoutes = new Map<string, BaseHandler>();
-    /** tool name -> its definition, for the facts that travel with a tool rather than in a registry. */
-    private readonly toolDefinitions = new Map<string, ToolDefinition>();
-    /** Which tools this server lists and routes. Resolved once, at startup. */
-    private readonly profile: ProfileName;
-    /** Ceiling on one answer, in bytes. 0 means none. Follows the profile. */
-    private readonly responseBudget: number;
-    /** The profile's tools, in tools/list order. Computed once — getTools() is static. */
-    private listedTools: ToolDefinition[] = [];
-    /** Tools this system cannot serve, and why. Empty until the gate has run. */
-    private gate: GateResult = { unavailable: new Map(), missing: [] };
-    /** The environment this server was built from. Injectable, so a test need not mutate process.env. */
-    private readonly env: NodeJS.ProcessEnv;
-    /** In flight or settled; the gate is evaluated at most once per process. */
-    private gatePromise?: Promise<void>;
+  /** Every handler, in tools/list order. */
+  private handlers: BaseHandler[] = [];
+  /** tool name (and alias) -> owning handler. Built from getTools(), so a listed tool is always callable. */
+  private readonly toolRoutes = new Map<string, BaseHandler>();
+  /** tool name -> its definition, for the facts that travel with a tool rather than in a registry. */
+  private readonly toolDefinitions = new Map<string, ToolDefinition>();
+  /** Which tools this server lists and routes. Resolved once, at startup. */
+  private readonly profile: ProfileName;
+  /** Ceiling on one answer, in bytes. 0 means none. Follows the profile. */
+  private readonly responseBudget: number;
+  /** The profile's tools, in tools/list order. Computed once — getTools() is static. */
+  private listedTools: ToolDefinition[] = [];
+  /** Tools this system cannot serve, and why. Empty until the gate has run. */
+  private gate: GateResult = { unavailable: new Map(), missing: [] };
+  /** The environment this server was built from. Injectable, so a test need not mutate process.env. */
+  private readonly env: NodeJS.ProcessEnv;
+  /** In flight or settled; the gate is evaluated at most once per process. */
+  private gatePromise?: Promise<void>;
 
-    constructor(dependencies: ServerDependencies = {}) {
+  constructor(dependencies: ServerDependencies = {}) {
     const env = dependencies.env ?? process.env;
 
     // Which system this server speaks for. Announced through `instructions`,
@@ -200,8 +286,8 @@ export class AbapAdtServer extends Server {
 
     super(
       {
-        name: "mcp-abap-abap-adt-api",
-        version: "0.1.0",
+        name: 'mcp-abap-abap-adt-api',
+        version: '0.1.0',
       },
       {
         capabilities: {
@@ -210,7 +296,7 @@ export class AbapAdtServer extends Server {
           resources: {},
         },
         instructions: serverInstructions(declared, env.SAP_URL),
-      }
+      },
     );
 
     this.systemIdentity = declared;
@@ -218,9 +304,11 @@ export class AbapAdtServer extends Server {
     this.responseBudget = responseBudget;
     this.env = env;
 
-    const missingVars = ['SAP_URL', 'SAP_USER'].filter(v => !env[v]);
+    const missingVars = ['SAP_URL', 'SAP_USER'].filter((v) => !env[v]);
     if (missingVars.length > 0) {
-      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+      throw new Error(
+        `Missing required environment variables: ${missingVars.join(', ')}`,
+      );
     }
 
     // Four ways in — Kerberos, a client certificate, an OAuth 2.0 token, a
@@ -240,17 +328,21 @@ export class AbapAdtServer extends Server {
     // placeholder for exactly that reason: the session is injected there too, but
     // if AdtHTTP ever did run a logon of its own, the placeholder would guarantee
     // it failed. Handing it the working credential removes the path entirely.
-    this.adtClient = dependencies.adtClient ?? new ADTClient(
-      env.SAP_URL as string,
-      env.SAP_USER as string,
-      this.sessionSource.mode === 'password'
-        ? String(env.SAP_PASSWORD ?? '')
-        : 'unused-sso-placeholder',
-      env.SAP_CLIENT as string,
-      env.SAP_LANGUAGE as string,
-      this.sessionSource.httpsAgent ? { httpsAgent: this.sessionSource.httpsAgent } : undefined
-    );
-    this.adtClient.stateful = session_types.stateful
+    this.adtClient =
+      dependencies.adtClient ??
+      new ADTClient(
+        env.SAP_URL as string,
+        env.SAP_USER as string,
+        this.sessionSource.mode === 'password'
+          ? String(env.SAP_PASSWORD ?? '')
+          : 'unused-sso-placeholder',
+        env.SAP_CLIENT as string,
+        env.SAP_LANGUAGE as string,
+        this.sessionSource.httpsAgent
+          ? { httpsAgent: this.sessionSource.httpsAgent }
+          : undefined,
+      );
+    this.adtClient.stateful = session_types.stateful;
 
     // Initialize handlers
     this.authHandlers = new AuthHandlers(this.adtClient);
@@ -261,8 +353,12 @@ export class AbapAdtServer extends Server {
     this.objectLockHandlers = new ObjectLockHandlers(this.adtClient);
     this.objectSourceHandlers = new ObjectSourceHandlers(this.adtClient);
     this.objectDeletionHandlers = new ObjectDeletionHandlers(this.adtClient);
-    this.objectManagementHandlers = new ObjectManagementHandlers(this.adtClient);
-    this.objectRegistrationHandlers = new ObjectRegistrationHandlers(this.adtClient);
+    this.objectManagementHandlers = new ObjectManagementHandlers(
+      this.adtClient,
+    );
+    this.objectRegistrationHandlers = new ObjectRegistrationHandlers(
+      this.adtClient,
+    );
     this.nodeHandlers = new NodeHandlers(this.adtClient);
     this.discoveryHandlers = new DiscoveryHandlers(this.adtClient);
     this.unitTestHandlers = new UnitTestHandlers(this.adtClient);
@@ -273,15 +369,26 @@ export class AbapAdtServer extends Server {
     // construction order of the two handlers does not matter.
     this.ddicHandlers = new DdicHandlers(
       this.adtClient,
-      (name, input, output) => this.jsonRemoteFunctionCallHandlers.callFunctionViaJsonRpc(name, input, output)
+      (name, input, output) =>
+        this.jsonRemoteFunctionCallHandlers.callFunctionViaJsonRpc(
+          name,
+          input,
+          output,
+        ),
     );
     // Also RFC-backed: neither the task handler nor the profile parameters are
     // part of ADT. The batch arrow is what lets checkLogonConfiguration read
     // twenty parameters in one round trip.
     this.basisHandlers = new BasisHandlers(
       this.adtClient,
-      (name, input, output) => this.jsonRemoteFunctionCallHandlers.callFunctionViaJsonRpc(name, input, output),
-      calls => this.jsonRemoteFunctionCallHandlers.callFunctionsViaJsonRpc(calls)
+      (name, input, output) =>
+        this.jsonRemoteFunctionCallHandlers.callFunctionViaJsonRpc(
+          name,
+          input,
+          output,
+        ),
+      (calls) =>
+        this.jsonRemoteFunctionCallHandlers.callFunctionsViaJsonRpc(calls),
     );
     this.serviceBindingHandlers = new ServiceBindingHandlers(this.adtClient);
     this.queryHandlers = new QueryHandlers(this.adtClient);
@@ -296,7 +403,7 @@ export class AbapAdtServer extends Server {
     // Kerberos session rather than through an abap-adt-api wrapper.
     this.jsonRemoteFunctionCallHandlers = new JsonRemoteFunctionCallHandlers(
       this.adtClient,
-      () => this.ensureSsoSession()
+      () => this.ensureSsoSession(),
     );
 
     // Serve this server's own documentation and the bundled skills. Neither
@@ -333,7 +440,7 @@ export class AbapAdtServer extends Server {
       this.refactorHandlers,
       this.revisionHandlers,
       this.basisHandlers,
-      this.jsonRemoteFunctionCallHandlers
+      this.jsonRemoteFunctionCallHandlers,
     ];
 
     this.buildToolRoutes();
@@ -365,24 +472,31 @@ export class AbapAdtServer extends Server {
         const discovery = await Promise.race([
           this.adtClient.adtDiscovery(),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('discovery timed out')), GATE_TIMEOUT_MS).unref())
+            setTimeout(
+              () => reject(new Error('discovery timed out')),
+              GATE_TIMEOUT_MS,
+            ).unref(),
+          ),
         ]);
 
         // The catalogue rather than the profile's slice: a tool withheld by the
         // profile is not listed anyway, and gating the whole set keeps the
         // healthcheck's `withheldForSystem` honest about the system.
-        this.gate = evaluateGate(discovery, this.handlers.flatMap(h => h.getTools()));
+        this.gate = evaluateGate(
+          discovery,
+          this.handlers.flatMap((h) => h.getTools()),
+        );
         if (this.gate.missing.length) {
           console.error(
             `[MCP] this system does not expose: ${this.gate.missing.join(', ')} — ` +
-            `${this.gate.unavailable.size} tool(s) withheld`
+              `${this.gate.unavailable.size} tool(s) withheld`,
           );
         }
       } catch (error: any) {
         // Deliberately swallowed. See the note above.
         console.error(
           `[MCP] could not read the ADT discovery document (${error?.message ?? error}); ` +
-          `offering every tool in the profile`
+            `offering every tool in the profile`,
         );
       }
     })();
@@ -394,12 +508,13 @@ export class AbapAdtServer extends Server {
     // The profile decides what is listed *and* what is routed. Filtering only
     // tools/list would leave every tool callable by a client that guessed a
     // name, which would make `analyst` a suggestion rather than a boundary.
-    const offered = this.handlers.flatMap(handler => handler.getTools());
+    const offered = this.handlers.flatMap((handler) => handler.getTools());
     for (const tool of offered) {
-      if (!this.toolDefinitions.has(tool.name)) this.toolDefinitions.set(tool.name, tool);
+      if (!this.toolDefinitions.has(tool.name))
+        this.toolDefinitions.set(tool.name, tool);
     }
     this.listedTools = applyProfile(this.profile, offered);
-    const listed = new Set(this.listedTools.map(tool => tool.name));
+    const listed = new Set(this.listedTools.map((tool) => tool.name));
 
     for (const handler of this.handlers) {
       for (const tool of handler.getTools()) {
@@ -409,7 +524,7 @@ export class AbapAdtServer extends Server {
         if (existing) {
           console.error(
             `[MCP] duplicate tool '${tool.name}': ${handler.constructor.name} ignored, ` +
-            `${existing.constructor.name} keeps it`
+              `${existing.constructor.name} keeps it`,
           );
           continue;
         }
@@ -419,7 +534,8 @@ export class AbapAdtServer extends Server {
 
     for (const [alias, target] of Object.entries(TOOL_ALIASES)) {
       const handler = this.toolRoutes.get(target);
-      if (handler && !this.toolRoutes.has(alias)) this.toolRoutes.set(alias, handler);
+      if (handler && !this.toolRoutes.has(alias))
+        this.toolRoutes.set(alias, handler);
     }
   }
 
@@ -438,7 +554,8 @@ export class AbapAdtServer extends Server {
     try {
       session = await this.sessionSource.establish();
     } catch (error) {
-      if ((error as { permanent?: boolean })?.permanent) this.permanentAuthFailure = error as Error;
+      if ((error as { permanent?: boolean })?.permanent)
+        this.permanentAuthFailure = error as Error;
       throw error;
     }
 
@@ -466,8 +583,13 @@ export class AbapAdtServer extends Server {
     const previous = this.systemIdentity.mismatch;
     this.systemIdentity = resolveSystemIdentity(this.env, cookieNames);
 
-    if (this.systemIdentity.mismatch && this.systemIdentity.mismatch !== previous) {
-      console.error(`[MCP] WARNING: wrong system configured. ${this.systemIdentity.mismatch}`);
+    if (
+      this.systemIdentity.mismatch &&
+      this.systemIdentity.mismatch !== previous
+    ) {
+      console.error(
+        `[MCP] WARNING: wrong system configured. ${this.systemIdentity.mismatch}`,
+      );
     }
   }
 
@@ -478,16 +600,19 @@ export class AbapAdtServer extends Server {
   private isSessionExpired(error: unknown): boolean {
     if (isCsrfError(error)) return true;
     if (isAdtException(error) && isLoginError(error)) return true;
-    if (isAdtError(error) && (error.err === 401 || error.err === 403)) return true;
+    if (isAdtError(error) && (error.err === 401 || error.err === 403))
+      return true;
     // Some paths surface it only as a message on a plain Error.
     return /csrf token validation failed|401 unauthorized/i.test(
-      String((error as any)?.message ?? '')
+      String((error as any)?.message ?? ''),
     );
   }
 
   /** True for anything already shaped like an MCP tool result. */
   private isToolResult(result: any): boolean {
-    return !!result && typeof result === 'object' && Array.isArray(result.content);
+    return (
+      !!result && typeof result === 'object' && Array.isArray(result.content)
+    );
   }
 
   /**
@@ -500,18 +625,24 @@ export class AbapAdtServer extends Server {
    * budget is enforced here rather than in each handler. A tool added tomorrow is
    * covered without being told about it.
    */
-  private serializeResult(result: any, toolName = 'unknown', handler?: BaseHandler) {
+  private serializeResult(
+    result: any,
+    toolName = 'unknown',
+    handler?: BaseHandler,
+  ) {
     try {
       const envelope = this.isToolResult(result)
         ? result
         : {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(result, (key, value) =>
-              typeof value === 'bigint' ? value.toString() : value
-            )
-          }]
-        };
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, (key, value) =>
+                  typeof value === 'bigint' ? value.toString() : value,
+                ),
+              },
+            ],
+          };
 
       // The tool's own narrowing advice travels with its definition, so a rename
       // cannot leave the hint behind and hand a model a generic sentence at the
@@ -520,22 +651,21 @@ export class AbapAdtServer extends Server {
         toolName,
         envelope,
         this.responseBudget,
-        this.toolDefinitions.get(toolName)?.narrowingHint
+        this.toolDefinitions.get(toolName)?.narrowingHint,
       );
       handler?.trackResponseBytes(capped.bytes, capped.truncated);
 
       if (capped.truncated) {
         console.error(
           `[MCP] ${toolName} answered ${capped.bytes} bytes, over the ${this.responseBudget} byte ` +
-          `budget for profile '${this.profile}' — withheld`
+            `budget for profile '${this.profile}' — withheld`,
         );
       }
       return capped.result;
     } catch (error) {
-      return this.handleError(new McpError(
-        ErrorCode.InternalError,
-        'Failed to serialize result'
-      ));
+      return this.handleError(
+        new McpError(ErrorCode.InternalError, 'Failed to serialize result'),
+      );
     }
   }
 
@@ -545,14 +675,16 @@ export class AbapAdtServer extends Server {
     }
     if (error instanceof McpError) {
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            error: error.message,
-            code: error.code
-          })
-        }],
-        isError: true
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              error: error.message,
+              code: error.code,
+            }),
+          },
+        ],
+        isError: true,
       };
     }
     // Not an McpError: keep the message instead of replacing it with a generic
@@ -560,14 +692,16 @@ export class AbapAdtServer extends Server {
     const err = error as Error;
     console.error('[MCP Error]', err);
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: err.message || 'Internal server error',
-          code: ErrorCode.InternalError
-        })
-      }],
-      isError: true
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            error: err.message || 'Internal server error',
+            code: ErrorCode.InternalError,
+          }),
+        },
+      ],
+      isError: true,
     };
   }
 
@@ -585,7 +719,7 @@ export class AbapAdtServer extends Server {
         'working. It still never establishes an ADT session, so it answers when everything else ' +
         'fails. Also reports the active tool profile, the response budget, and anything withheld ' +
         'because this system does not expose it.',
-      inputSchema: { type: 'object', properties: {} }
+      inputSchema: { type: 'object', properties: {} },
     };
   }
 
@@ -599,8 +733,8 @@ export class AbapAdtServer extends Server {
    * saying so beats implying the system is fine.
    */
   private async checkReachability(
-    timeoutMs = PING_TIMEOUT_MS
-  ): Promise<({ checked: false } | ({ checked: true } & ReachabilityReport))> {
+    timeoutMs = PING_TIMEOUT_MS,
+  ): Promise<{ checked: false } | ({ checked: true } & ReachabilityReport)> {
     const transport = this.sessionSource.probe;
     if (!transport) return { checked: false };
 
@@ -611,7 +745,7 @@ export class AbapAdtServer extends Server {
         language: this.env.SAP_LANGUAGE,
         authMode: this.sessionSource.mode,
         transport,
-        timeoutMs
+        timeoutMs,
       });
       return { checked: true, ...report };
     } catch (error) {
@@ -620,7 +754,7 @@ export class AbapAdtServer extends Server {
         ok: false,
         layer: 'unknown',
         summary: `The reachability probe itself failed: ${(error as Error).message}`,
-        endpoints: []
+        endpoints: [],
       };
     }
   }
@@ -637,16 +771,16 @@ export class AbapAdtServer extends Server {
     if (this.sessionViaFallback) {
       console.error(
         `[MCP] WARNING: SAP refused this user the ADT node and the session came from ` +
-        `${this.sessionViaFallback} instead. The RFC/JSON-RPC tools work; every ADT tool ` +
-        `will fail at call time. Grant S_DEVELOP to fix it properly — see docs/Authentication.md.`
+          `${this.sessionViaFallback} instead. The RFC/JSON-RPC tools work; every ADT tool ` +
+          `will fail at call time. Grant S_DEVELOP to fix it properly — see docs/Authentication.md.`,
       );
     }
 
     if (this.sessionSource.mode === 'password') {
       console.error(
         `[MCP] authenticated with a password as ${this.adtClient.username}${on}. A wrong or expired ` +
-        `password locks this user for everything that uses it — Kerberos (SAP_AUTH_MODE=kerberos) ` +
-        `or a certificate (SAP_CERT_FILE) cannot.`
+          `password locks this user for everything that uses it — Kerberos (SAP_AUTH_MODE=kerberos) ` +
+          `or a certificate (SAP_CERT_FILE) cannot.`,
       );
       return;
     }
@@ -663,35 +797,43 @@ export class AbapAdtServer extends Server {
         : '';
       console.error(
         `[MCP] authenticated with an OAuth 2.0 access token as ${this.adtClient.username}${on}` +
-        (token ? ` — ${token.grant} grant${token.tokenEndpoint ? ` from ${token.tokenEndpoint}` : ''}${lifetime}` : '')
+          (token
+            ? ` — ${token.grant} grant${token.tokenEndpoint ? ` from ${token.tokenEndpoint}` : ''}${lifetime}`
+            : ''),
       );
       return;
     }
 
     if (this.sessionSource.mode !== 'certificate') {
-      console.error(`[MCP] authenticated via Kerberos SSO as ${this.adtClient.username}${on}`);
+      console.error(
+        `[MCP] authenticated via Kerberos SSO as ${this.adtClient.username}${on}`,
+      );
       return;
     }
 
     const cert = this.certificate;
     console.error(
       `[MCP] authenticated via client certificate as ${this.adtClient.username}${on}` +
-      (cert ? ` — ${cert.subject}, valid to ${cert.validTo}` : '')
+        (cert ? ` — ${cert.subject}, valid to ${cert.validTo}` : ''),
     );
 
     // Three-year certificates expire quietly, and the failure then looks like an
     // authorisation problem rather than an expiry.
-    if (typeof cert?.daysUntilExpiry === 'number' && cert.daysUntilExpiry <= 30) {
+    if (
+      typeof cert?.daysUntilExpiry === 'number' &&
+      cert.daysUntilExpiry <= 30
+    ) {
       console.error(
         `[MCP] WARNING: the client certificate expires in ${cert.daysUntilExpiry} day(s). ` +
-        `Renew it before it does — logon will start failing with HTTP 401.`
+          `Renew it before it does — logon will start failing with HTTP 401.`,
       );
     }
   }
 
   private async healthcheck() {
     const metrics: Record<string, ReturnType<BaseHandler['getMetrics']>> = {};
-    for (const handler of this.handlers) metrics[handler.constructor.name] = handler.getMetrics();
+    for (const handler of this.handlers)
+      metrics[handler.constructor.name] = handler.getMetrics();
 
     const reachability = await this.checkReachability();
 
@@ -704,9 +846,10 @@ export class AbapAdtServer extends Server {
       // whatever the probe says: the probe pings /sap/bc/ping, which such a user
       // reaches perfectly well, so on its own it would report 'healthy' for a
       // server that cannot serve most of its tools.
-      status: (reachability.checked && !reachability.ok) || this.sessionViaFallback
-        ? 'degraded'
-        : 'healthy',
+      status:
+        (reachability.checked && !reachability.ok) || this.sessionViaFallback
+          ? 'degraded'
+          : 'healthy',
       timestamp: new Date().toISOString(),
       // Whether SAP answers at all, and which layer stopped the request when it
       // does not. The one part of this tool that is worth calling twice.
@@ -719,7 +862,9 @@ export class AbapAdtServer extends Server {
         client: this.systemIdentity.client,
         declared: this.systemIdentity.declaredSystemId,
         observed: this.systemIdentity.observedSystemId,
-        ...(this.systemIdentity.mismatch ? { WARNING: this.systemIdentity.mismatch } : {})
+        ...(this.systemIdentity.mismatch
+          ? { WARNING: this.systemIdentity.mismatch }
+          : {}),
       },
       session: {
         loggedin: this.adtClient.loggedin,
@@ -742,14 +887,14 @@ export class AbapAdtServer extends Server {
         // of retrying it as though the session had gone stale.
         ...(this.sessionViaFallback
           ? {
-            adtAvailable: false,
-            loggedOnVia: this.sessionViaFallback,
-            note:
-              'SAP refused this user the ADT node, so the session was taken from the ' +
-              'fallback node. The RFC/JSON-RPC tools work; ADT tools will fail at call ' +
-              'time. Granting S_DEVELOP removes the need for this.'
-          }
-          : {})
+              adtAvailable: false,
+              loggedOnVia: this.sessionViaFallback,
+              note:
+                'SAP refused this user the ADT node, so the session was taken from the ' +
+                'fallback node. The RFC/JSON-RPC tools work; ADT tools will fail at call ' +
+                'time. Granting S_DEVELOP removes the need for this.',
+            }
+          : {}),
       },
       tools: {
         profile: this.profile,
@@ -757,17 +902,22 @@ export class AbapAdtServer extends Server {
         // indistinguishable from a tool that simply returned little.
         responseBudgetBytes: this.responseBudget,
         // healthcheck is listed but not in toolRoutes; aliases are the other way round.
-        listed: this.listedTools.filter(t => !this.gate.unavailable.has(t.name)).length + 1,
+        listed:
+          this.listedTools.filter((t) => !this.gate.unavailable.has(t.name))
+            .length + 1,
         // Features this system does not expose, and the tools withheld with them.
         // Empty when the gate has not run or found nothing missing.
         systemMissing: this.gate.missing,
         withheldForSystem: [...this.gate.unavailable.keys()],
         // What the handlers offer in total, so the gap to `listed` shows what the
         // profile is holding back rather than leaving it to be guessed.
-        available: this.handlers.reduce((n, h) => n + h.getTools().length, 0) + 1,
-        aliases: Object.keys(TOOL_ALIASES).filter(alias => this.toolRoutes.has(alias)).length
+        available:
+          this.handlers.reduce((n, h) => n + h.getTools().length, 0) + 1,
+        aliases: Object.keys(TOOL_ALIASES).filter((alias) =>
+          this.toolRoutes.has(alias),
+        ).length,
       },
-      metrics
+      metrics,
     };
   }
 
@@ -779,21 +929,21 @@ export class AbapAdtServer extends Server {
   private setupResourceHandlers() {
     this.setRequestHandler(ListResourcesRequestSchema, async () => ({
       resources: [
-        ...GUIDES.map(guide => ({
+        ...GUIDES.map((guide) => ({
           uri: guideUri(guide.id),
           name: guide.title,
           description: guide.description,
-          mimeType: 'text/markdown'
+          mimeType: 'text/markdown',
         })),
         // Discovered from skills/ at call time, so a collection added or removed
         // on disk is reflected without a rebuild.
-        ...discoverSkills().map(skill => ({
+        ...discoverSkills().map((skill) => ({
           uri: skillUri(skill),
           name: `${skill.collection}: ${skill.name}`,
           description: skill.description,
-          mimeType: 'text/markdown'
-        }))
-      ]
+          mimeType: 'text/markdown',
+        })),
+      ],
     }));
 
     this.setRequestHandler(ReadResourceRequestSchema, async (request) => {
@@ -801,18 +951,26 @@ export class AbapAdtServer extends Server {
 
       const guide = guideByUri(uri);
       if (guide) {
-        return { contents: [{ uri, mimeType: 'text/markdown', text: readGuideFile(guide) }] };
+        return {
+          contents: [
+            { uri, mimeType: 'text/markdown', text: readGuideFile(guide) },
+          ],
+        };
       }
 
       const skill = skillByUri(uri);
       if (skill) {
-        return { contents: [{ uri, mimeType: 'text/markdown', text: readSkillFile(skill) }] };
+        return {
+          contents: [
+            { uri, mimeType: 'text/markdown', text: readSkillFile(skill) },
+          ],
+        };
       }
 
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Unknown resource '${uri}'. Guides: ${GUIDES.map(g => guideUri(g.id)).join(', ')}. ` +
-        `Skills are listed by resources/list.`
+        `Unknown resource '${uri}'. Guides: ${GUIDES.map((g) => guideUri(g.id)).join(', ')}. ` +
+          `Skills are listed by resources/list.`,
       );
     });
   }
@@ -827,16 +985,19 @@ export class AbapAdtServer extends Server {
         // healthcheck is outside every profile on purpose: it is how a client finds
         // out which profile is active, so it has to be there in all of them.
         tools: [
-          ...this.listedTools.filter(tool => !this.gate.unavailable.has(tool.name)),
-          this.healthcheckTool()
-        ]
+          ...this.listedTools.filter(
+            (tool) => !this.gate.unavailable.has(tool.name),
+          ),
+          this.healthcheckTool(),
+        ],
       };
     });
 
     this.setRequestHandler(CallToolRequestSchema, async (request) => {
       const name = request.params.name;
       try {
-        if (name === 'healthcheck') return this.serializeResult(await this.healthcheck(), 'healthcheck');
+        if (name === 'healthcheck')
+          return this.serializeResult(await this.healthcheck(), 'healthcheck');
 
         // Not only in tools/list: a client is free to call a tool it already knows
         // about without listing first, and it would otherwise reach an ungated
@@ -852,13 +1013,15 @@ export class AbapAdtServer extends Server {
         if (!handler) {
           // Distinguish "no such tool" from "not in this profile". Without this a
           // model that knows the tool exists gets told it does not, and retries.
-          const exists = this.handlers.some(h => h.getTools().some(t => t.name === name));
+          const exists = this.handlers.some((h) =>
+            h.getTools().some((t) => t.name === name),
+          );
           throw new McpError(
             ErrorCode.MethodNotFound,
             exists
               ? `Tool '${name}' exists but is not in the active profile '${this.profile}'. ` +
-                `Start the server with ABAP_MCP_PROFILE=all to reach it, or use a listed tool.`
-              : `Unknown tool: ${name}`
+                  `Start the server with ABAP_MCP_PROFILE=all to reach it, or use a listed tool.`
+              : `Unknown tool: ${name}`,
           );
         }
 
@@ -866,7 +1029,11 @@ export class AbapAdtServer extends Server {
         if (!this.adtClient.loggedin) await this.ensureSsoSession();
 
         try {
-          return this.serializeResult(await handler.handle(name, request.params.arguments), name, handler);
+          return this.serializeResult(
+            await handler.handle(name, request.params.arguments),
+            name,
+            handler,
+          );
         } catch (error) {
           // Part two, and the one that actually bites. `loggedin` is only
           // `csrfToken !== "fetch"`, so it stays true forever once a token has
@@ -879,9 +1046,16 @@ export class AbapAdtServer extends Server {
           // a 401 means ICF refused the request *before* it reached ABAP, so
           // nothing was applied and nothing can be applied twice.
           if (!this.isSessionExpired(error)) throw error;
-          console.error('[MCP] session expired, re-establishing SSO and retrying', name);
+          console.error(
+            '[MCP] session expired, re-establishing SSO and retrying',
+            name,
+          );
           await this.ensureSsoSession();
-          return this.serializeResult(await handler.handle(name, request.params.arguments), name, handler);
+          return this.serializeResult(
+            await handler.handle(name, request.params.arguments),
+            name,
+            handler,
+          );
         }
       } catch (error) {
         return this.handleError(error);
@@ -909,19 +1083,24 @@ export class AbapAdtServer extends Server {
    * worth a line when the two disagree. Confirming a match here would put a
    * sentence in front of every startup failure saying nothing.
    */
-  private describeWrongSystem(observed?: { systemId?: string; client?: string }): string[] {
+  private describeWrongSystem(observed?: {
+    systemId?: string;
+    client?: string;
+  }): string[] {
     const declared = this.systemIdentity.declaredSystemId;
     if (!observed?.systemId || !declared) return [];
 
     const sameSystem = observed.systemId === declared;
-    const sameClient = !observed.client || !this.systemIdentity.declaredClient
-      || Number(observed.client) === Number(this.systemIdentity.declaredClient);
+    const sameClient =
+      !observed.client ||
+      !this.systemIdentity.declaredClient ||
+      Number(observed.client) === Number(this.systemIdentity.declaredClient);
     if (sameSystem && sameClient) return [];
 
     return [
       '',
       `SAP identified itself as ${observed.systemId}/${observed.client ?? '?'}, but this server is ` +
-      `configured for ${describeSystem(this.systemIdentity)}. It is pointed at the wrong system.`
+        `configured for ${describeSystem(this.systemIdentity)}. It is pointed at the wrong system.`,
     ];
   }
 
@@ -940,9 +1119,9 @@ export class AbapAdtServer extends Server {
       original.message,
       '',
       `Reachability probe (${report.layer}): ${report.summary}.`,
-      ...report.endpoints.map(e => `  ${e.path} -> ${e.error ?? e.status}`),
+      ...report.endpoints.map((e) => `  ${e.path} -> ${e.error ?? e.status}`),
       ...(report.advice ? ['', report.advice] : []),
-      ...this.describeWrongSystem(report.observed)
+      ...this.describeWrongSystem(report.observed),
     ].join('\n');
 
     const explained = new Error(detail);
@@ -951,33 +1130,228 @@ export class AbapAdtServer extends Server {
     return explained;
   }
 
-  async run() {
+  /**
+   * Establishes (or re-establishes) the SAP session and logs the identity SAP
+   * confirmed. Public and separate from run() so HTTP hosting can call it once
+   * per MCP session — each of which is a distinct AbapAdtServer instance with
+   * its own logon — rather than only once at process startup.
+   */
+  async bootstrapSession(): Promise<void> {
     try {
       await this.ensureSsoSession();
     } catch (error) {
       throw await this.explainStartupFailure(error);
     }
     this.logIdentity();
+  }
+
+  async run() {
+    if (resolveTransportMode(this.env) === 'http') {
+      await this.runHttp();
+      return;
+    }
+
+    await this.bootstrapSession();
 
     const transport = new StdioServerTransport();
     await this.connect(transport);
     console.error('MCP ABAP ADT API server running on stdio');
-    
+
     // Handle shutdown
     process.on('SIGINT', async () => {
       await this.close();
       process.exit(0);
     });
-    
+
     process.on('SIGTERM', async () => {
       await this.close();
       process.exit(0);
     });
-    
+
     // Handle errors
     this.onerror = (error) => {
       console.error('[MCP Error]', error);
     };
   }
-}
 
+  /**
+   * Builds the AbapAdtServer for one HTTP/MCP session. Overridable so a test
+   * can stub out the real SAP bootstrap (see handlerContract-style tests using
+   * fixedSessionSource) without touching the routing/session-map logic below.
+   */
+  protected createSessionServer(env: NodeJS.ProcessEnv): AbapAdtServer {
+    return new AbapAdtServer({ env });
+  }
+
+  /**
+   * Serves Streamable HTTP instead of stdio, for a container multiple team
+   * members connect to. `Server.connect()` (the MCP SDK's `Protocol` base
+   * class) allows exactly one transport per instance for its whole lifetime,
+   * so this cannot reuse `this` across connections the way stdio does — one
+   * new AbapAdtServer, and one new SAP logon, is built per MCP session
+   * instead. That is deliberate rather than a limitation worked around: each
+   * HTTP client supplies its own SAP OAuth bearer token on `initialize` (see
+   * `extractBearerToken`), which becomes that session's own SAP identity —
+   * true per-user isolation, not one shared technical user serving everyone
+   * who connects. See docs/Authentication.md for the env vars this reads.
+   */
+  protected async runHttp(): Promise<{ port: number; close(): Promise<void> }> {
+    const port = Number(this.env.ABAP_MCP_HTTP_PORT ?? 3000);
+    const host = this.env.ABAP_MCP_HTTP_HOST ?? '0.0.0.0';
+
+    const sessions = new Map<
+      string,
+      { transport: StreamableHTTPServerTransport; server: AbapAdtServer }
+    >();
+
+    const closeSession = async (sessionId: string): Promise<void> => {
+      const session = sessions.get(sessionId);
+      if (!session) return;
+      sessions.delete(sessionId);
+      await session.server.close().catch(() => {
+        /* already closing */
+      });
+    };
+
+    const startSession = async (
+      req: IncomingMessage,
+      res: ServerResponse,
+      body: unknown,
+    ): Promise<void> => {
+      const token = extractBearerToken(req);
+      if (!token) {
+        writeJsonRpcError(
+          res,
+          401,
+          ErrorCode.InvalidRequest,
+          'Missing or malformed Authorization header. This server expects ' +
+            '`Authorization: Bearer <SAP OAuth access token>` on every request — that token is this ' +
+            "session's own SAP identity, not a shared server credential.",
+        );
+        return;
+      }
+
+      const server = this.createSessionServer({
+        ...this.env,
+        SAP_AUTH_MODE: 'oauth',
+        SAP_OAUTH_GRANT: 'static',
+        SAP_OAUTH_TOKEN: token,
+      });
+      server.onerror = (error) => console.error('[MCP Error]', error);
+
+      try {
+        await server.bootstrapSession();
+      } catch (error: any) {
+        writeJsonRpcError(
+          res,
+          401,
+          ErrorCode.InvalidRequest,
+          `SAP rejected this session's token: ${error?.message ?? error}`,
+        );
+        return;
+      }
+
+      const transport: StreamableHTTPServerTransport =
+        new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (id: string) => {
+            sessions.set(id, { transport, server });
+          },
+        });
+      transport.onclose = () => {
+        if (transport.sessionId) void closeSession(transport.sessionId);
+      };
+
+      await server.connect(transport);
+      await transport.handleRequest(req, res, body);
+    };
+
+    const httpServer = createHttpServer(async (req, res) => {
+      if (
+        !req.url ||
+        new URL(req.url, 'http://localhost').pathname !== '/mcp'
+      ) {
+        writeJsonRpcError(
+          res,
+          404,
+          ErrorCode.InvalidRequest,
+          'Not found. This server only serves /mcp.',
+        );
+        return;
+      }
+
+      const sessionId = req.headers['mcp-session-id'];
+      const existing =
+        typeof sessionId === 'string' ? sessions.get(sessionId) : undefined;
+      if (existing) {
+        await existing.transport.handleRequest(req, res);
+        return;
+      }
+      if (typeof sessionId === 'string') {
+        writeJsonRpcError(
+          res,
+          404,
+          ErrorCode.InvalidRequest,
+          'Session not found.',
+        );
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        writeJsonRpcError(
+          res,
+          400,
+          ErrorCode.InvalidRequest,
+          'Bad Request: Mcp-Session-Id header required.',
+        );
+        return;
+      }
+
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch (error: any) {
+        writeJsonRpcError(
+          res,
+          400,
+          ErrorCode.ParseError,
+          `Parse error: ${error?.message ?? error}`,
+        );
+        return;
+      }
+      if (!isInitializeRequest(body)) {
+        writeJsonRpcError(
+          res,
+          400,
+          ErrorCode.InvalidRequest,
+          'Bad Request: Mcp-Session-Id header required.',
+        );
+        return;
+      }
+
+      await startSession(req, res, body);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      httpServer.once('error', reject);
+      httpServer.listen(port, host, () => {
+        httpServer.off('error', reject);
+        resolve();
+      });
+    });
+    const boundPort = (httpServer.address() as { port: number }).port;
+    console.error(
+      `MCP ABAP ADT API server listening on http://${host}:${boundPort}/mcp`,
+    );
+
+    const close = async (): Promise<void> => {
+      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      for (const id of [...sessions.keys()]) await closeSession(id);
+    };
+
+    process.on('SIGINT', () => close().then(() => process.exit(0)));
+    process.on('SIGTERM', () => close().then(() => process.exit(0)));
+
+    return { port: boundPort, close };
+  }
+}

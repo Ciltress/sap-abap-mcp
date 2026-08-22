@@ -4,7 +4,8 @@
  * The entry point, and only the entry point.
  *
  * The server itself lives in ./server.ts. It is split off because this file runs
- * on import — it loads .env, builds a server and connects it to stdio — and a
+ * on import — it loads .env, builds a server and connects it to a transport
+ * (stdio by default, or Streamable HTTP when `ABAP_MCP_TRANSPORT=http`) — and a
  * module that does that cannot be imported by a test. 747 lines of routing,
  * session recovery and gate handling were unreachable as a result, including the
  * retry after SAP drops a session and the rule that the gate must never fail
