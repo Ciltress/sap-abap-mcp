@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for AI agents working **on this repository**. If you are an agent *using* the running server
+Guidance for AI agents working **on this repository**. If you are an agent _using_ the running server
 to work on ABAP, you want [`docs/MCP-Tools.md`](docs/MCP-Tools.md) instead.
 
 ## What this is
@@ -13,15 +13,15 @@ which involves a password (there is a password mode too, as a last resort). It w
 
 ## Read these first
 
-| Document | When you need it |
-| --- | --- |
-| **[`docs/Tool-Router.md`](docs/Tool-Router.md)** | Intent to tool, hand-written: "short dump", "where-used", "SE16". The cheapest useful thing to read, and the right first stop when you know the job but not the tool. |
-| **[`docs/Tool-Reference.md`](docs/Tool-Reference.md)** | Every tool with its arguments, **generated** from `getTools()` by `npm run docs:tools`. Never edit it by hand. |
-| **[`docs/MCP-Tools.md`](docs/MCP-Tools.md)** | The rules a generator cannot produce: golden-path workflows, ADT URI and lock semantics, the response/error model, a troubleshooting matrix, and the test-suite map. **Start here** for how the server behaves. |
-| **[`docs/ABAP-Skills.md`](docs/ABAP-Skills.md)** | The bundled ABAP skills, which of them use these tools, and the two traps found while wiring them up. |
-| **[`docs/Development-Skills.md`](docs/Development-Skills.md)** | The bundled general engineering skills, and which fit this repo. |
-| **[`docs/JSON-RPC.md`](docs/JSON-RPC.md)** | The design and protocol record for the RFC path: the wire protocol read from `/IWBEP/CL_JSRPC_*`, why a batch shares one LUW, and the traps that bite. Read it before touching `JsonRemoteFunctionCallHandlers.ts` or anything that calls a function module. |
-| **[`docs/Authentication.md`](docs/Authentication.md)** | All four logon modes and what SAP needs for each. Read it before touching `sso.ts`, `certauth.ts`, `oauth.ts`, `passwordauth.ts` or `session.ts`, which is the seam they sit behind — in particular why the placeholder password must never reach SAP, and which failures are latched because retrying them would lock a SAP user. |
+| Document                                                       | When you need it                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **[`docs/Tool-Router.md`](docs/Tool-Router.md)**               | Intent to tool, hand-written: "short dump", "where-used", "SE16". The cheapest useful thing to read, and the right first stop when you know the job but not the tool.                                                                                                                                                                                                                                                                                                                    |
+| **[`docs/Tool-Reference.md`](docs/Tool-Reference.md)**         | Every tool with its arguments, **generated** from `getTools()` by `npm run docs:tools`. Never edit it by hand.                                                                                                                                                                                                                                                                                                                                                                           |
+| **[`docs/MCP-Tools.md`](docs/MCP-Tools.md)**                   | The rules a generator cannot produce: golden-path workflows, ADT URI and lock semantics, the response/error model, a troubleshooting matrix, and the test-suite map. **Start here** for how the server behaves.                                                                                                                                                                                                                                                                          |
+| **[`docs/ABAP-Skills.md`](docs/ABAP-Skills.md)**               | The bundled ABAP skills, which of them use these tools, and the two traps found while wiring them up.                                                                                                                                                                                                                                                                                                                                                                                    |
+| **[`docs/Development-Skills.md`](docs/Development-Skills.md)** | The bundled general engineering skills, and which fit this repo.                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **[`docs/JSON-RPC.md`](docs/JSON-RPC.md)**                     | The design and protocol record for the RFC path: the wire protocol read from `/IWBEP/CL_JSRPC_*`, why a batch shares one LUW, and the traps that bite. Read it before touching `JsonRemoteFunctionCallHandlers.ts` or anything that calls a function module.                                                                                                                                                                                                                             |
+| **[`docs/Authentication.md`](docs/Authentication.md)**         | All four logon modes and what SAP needs for each, plus how Streamable HTTP hosting (`ABAP_MCP_TRANSPORT=http`) builds one per-connection session per SAP OAuth token instead of one shared stdio logon. Read it before touching `sso.ts`, `certauth.ts`, `oauth.ts`, `passwordauth.ts` or `session.ts`, which is the seam they sit behind — in particular why the placeholder password must never reach SAP, and which failures are latched because retrying them would lock a SAP user. |
 
 They all live in [`docs/`](docs/) and are kept accurate deliberately — treat a contradiction between a
 doc and the code as a bug in one of them, and fix it rather than working around it.
@@ -47,8 +47,9 @@ it matters:
 
 ```
 src/
-  index.ts                 entry point only: loads .env, builds the server, connects stdio
-  server.ts                the MCP server: routes from getTools(), session recovery, serializeResult
+  index.ts                 entry point only: loads .env, builds the server, connects its transport
+  server.ts                the MCP server: routes from getTools(), session recovery, serializeResult,
+                           stdio vs. Streamable HTTP (ABAP_MCP_TRANSPORT), per-connection OAuth in HTTP mode
   session.ts               which logon this server uses, and the seam its four adapters sit at
   sso.ts                   SPNEGO/Kerberos session bootstrap (curl --negotiate) and injection
   certauth.ts              X.509 client-certificate mode, for users with no Kerberos identity
@@ -98,7 +99,7 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
   added tomorrow without being told about it. Over-budget answers are replaced by valid JSON that
   states the original size and the next step — never by a cut-off fragment, which would not parse and
   which a model responds to by retrying the same call. Treat the ceiling as a runaway guard: a tool
-  that overruns *routinely* should grow a real argument (row limit, summary mode) instead, the way
+  that overruns _routinely_ should grow a real argument (row limit, summary mode) instead, the way
   `adtDiscovery` takes `full`.
 - **The system decides what it can serve; ask it, do not hard-code it.** On first use the server
   reads the ADT discovery document once and withholds tools whose collection is absent — 10 `git*`
@@ -106,7 +107,7 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
   client needs `tools/list_changed`, and it is memoised per process. **Every failure path leaves the
   gate empty and the list complete**: hiding a tool that would have worked is worse than offering one
   that errors, because the first is invisible. `ABAP_MCP_GATE=off` skips the round trip.
-- **The profile decides what is listed *and* what is routed.** `ABAP_MCP_PROFILE` defaults to `all`;
+- **The profile decides what is listed _and_ what is routed.** `ABAP_MCP_PROFILE` defaults to `all`;
   `core` lists 9 tools instead of 129, which is ~2,700 tokens instead of ~17,800 on every turn for a
   client that cannot fetch schemas on demand. A tool outside the profile is not callable, so `analyst`
   genuinely cannot edit source. Renaming or removing a tool named by a profile fails at **startup**,
@@ -122,7 +123,7 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
   declared `type: 'object'`, not `'string'`. There is no `optional` marker — omit the name from
   `required`.
 - **A status code is not a diagnosis.** 401 and 403 arrive at the same place and mean different
-  layers: SAP sends 403 *before* offering a logon, so no credential was examined and the ticket cannot
+  layers: SAP sends 403 _before_ offering a logon, so no credential was examined and the ticket cannot
   be the cause. Handling them together is how "the ADT ICF node is switched off" was reported as "no
   valid Kerberos ticket, check klist" on two systems for two days. When a message names a cause, the
   code has to have evidence for that cause — [`src/reachability.ts`](src/reachability.ts) gets it by
@@ -131,7 +132,7 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
 - **`searchObject`'s two traps are handled in the tool, not in a warning.** It adds a trailing `*`
   when the caller passes no wildcard and upper-cases the query (the repository search is case
   sensitive on older systems), and it never forwards `objType` to abap-adt-api — which truncates it to
-  its first segment, so `FUGR/FF` asked for function *groups*. The type filter is applied to
+  its first segment, so `FUGR/FF` asked for function _groups_. The type filter is applied to
   `adtcore:type` in the handler, with a x10 over-fetch so filtering cannot starve the result set.
   `handlerContract.test.ts` records this as a deliberate exception to argument pass-through.
 
@@ -160,7 +161,7 @@ decision, encode the exception there with a comment — do not weaken the assert
 so it cannot know SAP's own rules. `editAbapSource` shipped with 16 passing tests and failed on the
 first real object twice: it activated while still holding the lock, which SAP refuses with `User
 <you> is currently editing <OBJECT>`, and it resolved objects only by name, which cannot find a
-freshly created one because the repository search indexes only *active* objects. Both are invisible
+freshly created one because the repository search indexes only _active_ objects. Both are invisible
 to a fake. **Anything that locks, writes, activates or deletes has to be run against a real system
 once** — a throwaway object in `$TMP`, created and deleted in the same session, is enough and costs
 nothing. Then encode what you learned as an assertion, so the fake enforces it from then on.
@@ -177,7 +178,7 @@ This server writes. When working against a real system:
 
 - Prefer read-only function modules; treat anything not demonstrably read-only as a write.
 - A JSON-RPC **batch shares one LUW**, so a `BAPI_TRANSACTION_ROLLBACK` as the last member undoes the
-  earlier ones — that is the safe way to probe a write. A rollback sent as a *separate* call cannot
+  earlier ones — that is the safe way to probe a write. A rollback sent as a _separate_ call cannot
   reach the earlier request. See [`docs/JSON-RPC.md` §5](docs/JSON-RPC.md).
 - Locks are session-bound: always `unLock` what you `lock`, including after a failure.
 - Ask before writing to objects you do not own.

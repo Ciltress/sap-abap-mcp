@@ -3,12 +3,12 @@
 This server supports four ways of proving who it is, and all four end in the same place — SAP
 session cookies plus a CSRF token, injected into the ADT client before any request.
 
-| Mode | For | Needs |
-| --- | --- | --- |
-| `kerberos` (default) | A domain user working interactively | A Kerberos ticket (`klist`), `curl --negotiate` |
-| `certificate` | A **service or technical user** with no Kerberos identity | An X.509 client certificate and its private key |
-| `oauth` | An **SAP BTP ABAP environment**, or a system that publishes ADT through `SOAUTH2` | A token endpoint and an OAuth 2.0 client — see [§11](#11-oauth-20-mode) |
-| `password` | A system that offers none of the above | `SAP_USER` and `SAP_PASSWORD` |
+| Mode                 | For                                                                               | Needs                                                                   |
+| -------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `kerberos` (default) | A domain user working interactively                                               | A Kerberos ticket (`klist`), `curl --negotiate`                         |
+| `certificate`        | A **service or technical user** with no Kerberos identity                         | An X.509 client certificate and its private key                         |
+| `oauth`              | An **SAP BTP ABAP environment**, or a system that publishes ADT through `SOAUTH2` | A token endpoint and an OAuth 2.0 client — see [§11](#11-oauth-20-mode) |
+| `password`           | A system that offers none of the above                                            | `SAP_USER` and `SAP_PASSWORD`                                           |
 
 Certificate mode exists because a technical user has no Windows logon to borrow a ticket from. It is
 the mode to use for anything that runs unattended **on-premise**. OAuth mode is its equivalent where
@@ -16,7 +16,7 @@ there is no ICM to configure and no Kerberos realm to join — which is every AB
 
 **Password mode is the last resort, and it is worth knowing why before choosing it.** The other two
 cannot fail in a way that harms the system: a missing ticket or an unmapped certificate is refused and
-nothing else happens. A password can be *wrong*, and SAP counts every wrong one against
+nothing else happens. A password can be _wrong_, and SAP counts every wrong one against
 `login/fails_to_user_lock` — so a typo in a config file locks that user for **every** consumer of it,
 not just this server. On a shared technical account that is an outage, and it is caused by the client
 rather than suffered by it.
@@ -37,19 +37,19 @@ its RFC tools tunnel through the SAP Gateway JSON-RPC service — which is also 
 equivalent of SNC is **mutual TLS**: the certificate is presented in the TLS handshake, and the ICM
 maps it to a user.
 
-So if you followed a *SNC certificate* runbook (for example a corporate one for the `pyrfc`-based RFC
+So if you followed a _SNC certificate_ runbook (for example a corporate one for the `pyrfc`-based RFC
 MCP server), what carries over and what does not:
 
-| From the SNC setup | Here |
-| --- | --- |
-| The certificate and its private key | **Reused as-is** — same key pair, same DN |
-| The signing by the corporate PKI | **Reused** |
-| `CERTRULE` mapping to the SAP user | **Reused** — the same rule serves HTTPS logon |
-| `SNC0` ACL entry | **Not used.** That is RFC only |
-| `snc_partnername` / `snc_qop` / `snc_myname` | **Not used.** No SNC handshake happens |
-| `SNC_LIB`, `SECUDIR`, `sapcrypto.dll` | **Not used.** Node does TLS itself |
-| — | The ICM port must request a certificate (`VCLIENT` / `icm/HTTPS/verify_client`) |
-| — | The issuing CA must be trusted in `STRUST` |
+| From the SNC setup                           | Here                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| The certificate and its private key          | **Reused as-is** — same key pair, same DN                                       |
+| The signing by the corporate PKI             | **Reused**                                                                      |
+| `CERTRULE` mapping to the SAP user           | **Reused** — the same rule serves HTTPS logon                                   |
+| `SNC0` ACL entry                             | **Not used.** That is RFC only                                                  |
+| `snc_partnername` / `snc_qop` / `snc_myname` | **Not used.** No SNC handshake happens                                          |
+| `SNC_LIB`, `SECUDIR`, `sapcrypto.dll`        | **Not used.** Node does TLS itself                                              |
+| —                                            | The ICM port must request a certificate (`VCLIENT` / `icm/HTTPS/verify_client`) |
+| —                                            | The issuing CA must be trusted in `STRUST`                                      |
 
 The practical consequence: **a certificate that works for RFC/SNC does not automatically work for
 ADT.** The user mapping is shared, the transport configuration is not.
@@ -60,15 +60,15 @@ ADT.** The user mapping is shared, the transport configuration is not.
 
 Four things, in the order they are usually missing:
 
-1. **`CERTRULE` maps the certificate to a SAP user.** Import the certificate, choose *Explicit
-   Mapping*, name the user. This is the same entry an SNC setup makes, so if RFC already works this is
+1. **`CERTRULE` maps the certificate to a SAP user.** Import the certificate, choose _Explicit
+   Mapping_, name the user. This is the same entry an SNC setup makes, so if RFC already works this is
    already done. Rule-based mapping needs `login/certificate_mapping_rulebased = 1`.
 2. **The ICM asks for a client certificate on the port you connect to.** This is set **per port**, as
    `VCLIENT=1` (request) or `VCLIENT=2` (require) inside `icm/server_port_<n>` — and the per-port value
    **overrides** the global `icm/HTTPS/verify_client`. Checking only the global parameter is
    misleading in both directions: a system with `icm/HTTPS/verify_client = 0` can still request
    certificates on a port whose `VCLIENT=1`.
-3. **The issuing CA is in the server's SSL PSE certificate list** (`STRUST` → *SSL server Standard* →
+3. **The issuing CA is in the server's SSL PSE certificate list** (`STRUST` → _SSL server Standard_ →
    certificate list). Without it the ICM cannot verify the chain and drops the handshake.
 4. **The ICF node allows certificate logon** (`SICF`, logon data).
 
@@ -80,7 +80,7 @@ There is a tool for this, so the state of a system can be established before any
 anything:
 
 ```jsonc
-{"tool":"checkLogonConfiguration","args":{}}
+{ "tool": "checkLogonConfiguration", "args": {} }
 ```
 
 It reads the profile parameters over the RFC route, finds the ICM port that matches `SAP_URL`, and
@@ -106,7 +106,7 @@ Points 3 and 4 stay manual — `STRUST` and `CERTRULE` are not profile parameter
 
 For anything else in the profile, `readProfileParameters` takes a list of names and reads them all in
 one round trip. Both tools go through `TH_GET_PARAMETER` (function group `THFB2`), which is RFC-enabled
-and read-only; it needs `S_ADMI_FCD`, and without it *every* parameter fails at once.
+and read-only; it needs `S_ADMI_FCD`, and without it _every_ parameter fails at once.
 
 ---
 
@@ -151,19 +151,19 @@ SAP_CERT_FILE=C:\Users\svc_agent\SNC\sec\claudeagent.p12
 SAP_CERT_PASSPHRASE=<the PKCS#12 password / PSE PIN>
 ```
 
-| Variable | Meaning |
-| --- | --- |
-| `SAP_AUTH_MODE` | `kerberos`, `certificate`, `oauth` or `password`. Optional — `SAP_CERT_FILE` already selects certificate mode, `SAP_OAUTH_CLIENT_ID` selects OAuth and `SAP_PASSWORD` selects password mode. Set it explicitly to force Kerberos while one of those is configured. |
-| `SAP_PASSWORD` | Password mode only, and the last resort — see [§10](#10-password-mode). Ignored when a certificate is configured, and read as the resource owner's password by the OAuth `password` grant. |
-| `SAP_OAUTH_*` | OAuth 2.0 mode — see [§11](#11-oauth-20-mode). |
-| `SAP_CERT_FILE` | PKCS#12 (`.p12`/`.pfx`) or PEM holding the client certificate. The extension decides how it is opened. |
-| `SAP_CERT_KEY_FILE` | The private key, when it is not in `SAP_CERT_FILE`. A PEM usually holds both, in which case leave this unset. |
-| `SAP_CERT_PASSPHRASE` | PKCS#12 password or PEM key passphrase. For a PSE export this is the PSE PIN. |
-| `SAP_CA_FILE` | CA bundle for verifying **SAP's own** certificate, when it comes from an internal CA. The alternative is `NODE_TLS_REJECT_UNAUTHORIZED=0`, which is development only. |
+| Variable              | Meaning                                                                                                                                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SAP_AUTH_MODE`       | `kerberos`, `certificate`, `oauth` or `password`. Optional — `SAP_CERT_FILE` already selects certificate mode, `SAP_OAUTH_CLIENT_ID` selects OAuth and `SAP_PASSWORD` selects password mode. Set it explicitly to force Kerberos while one of those is configured. |
+| `SAP_PASSWORD`        | Password mode only, and the last resort — see [§10](#10-password-mode). Ignored when a certificate is configured, and read as the resource owner's password by the OAuth `password` grant.                                                                         |
+| `SAP_OAUTH_*`         | OAuth 2.0 mode — see [§11](#11-oauth-20-mode).                                                                                                                                                                                                                     |
+| `SAP_CERT_FILE`       | PKCS#12 (`.p12`/`.pfx`) or PEM holding the client certificate. The extension decides how it is opened.                                                                                                                                                             |
+| `SAP_CERT_KEY_FILE`   | The private key, when it is not in `SAP_CERT_FILE`. A PEM usually holds both, in which case leave this unset.                                                                                                                                                      |
+| `SAP_CERT_PASSPHRASE` | PKCS#12 password or PEM key passphrase. For a PSE export this is the PSE PIN.                                                                                                                                                                                      |
+| `SAP_CA_FILE`         | CA bundle for verifying **SAP's own** certificate, when it comes from an internal CA. The alternative is `NODE_TLS_REJECT_UNAUTHORIZED=0`, which is development only.                                                                                              |
 
 `SAP_USER` stays required. It is **not transmitted** in certificate mode — SAP decides the user from
 the `CERTRULE` mapping — but it is what `healthcheck` and `listLoggedOnUsers` report as the current
-user, so it has to agree with the mapping or those answers will be wrong. In password mode it *is*
+user, so it has to agree with the mapping or those answers will be wrong. In password mode it _is_
 transmitted, and is the user being authenticated.
 
 Neither Kerberos nor certificate mode has a password. `SAP_PASSWORD` exists for the third mode only,
@@ -189,10 +189,10 @@ and setting it while a certificate is configured does nothing.
         "SAP_LANGUAGE": "EN",
         "SAP_CERT_FILE": "C:\\Users\\svc_agent\\SNC\\sec\\claudeagent.p12",
         "SAP_CERT_PASSPHRASE": "…",
-        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
-      }
-    }
-  }
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0",
+      },
+    },
+  },
 }
 ```
 
@@ -210,7 +210,7 @@ clean:
 `healthcheck` reports the same thing at any time, without establishing an ADT session:
 
 ```jsonc
-{"tool":"healthcheck","args":{}}
+{ "tool": "healthcheck", "args": {} }
 ```
 
 ```jsonc
@@ -256,15 +256,15 @@ but it does say whether SAP is there:
 
 The pair is the point, and one endpoint alone cannot replace it:
 
-| `/sap/public/ping` | `/sap/bc/ping` | `layer` | What it means |
-| --- | --- | --- | --- |
-| no answer | no answer | `network` | DNS, routing, the port or the VPN. SAP is not involved |
-| TLS failure | TLS failure | `tls` | SAP's server certificate is not trusted here — `SAP_CA_FILE` |
-| 200 | 200 | `ok` | Host, ICF and logon all working |
-| 200 | 403 / 404 | `icf` | SAP is up and will not serve the node. **No credential was examined** |
-| 200 | 401 | `logon` | The ICF serves it; SAP refused the credential |
+| `/sap/public/ping` | `/sap/bc/ping` | `layer`   | What it means                                                         |
+| ------------------ | -------------- | --------- | --------------------------------------------------------------------- |
+| no answer          | no answer      | `network` | DNS, routing, the port or the VPN. SAP is not involved                |
+| TLS failure        | TLS failure    | `tls`     | SAP's server certificate is not trusted here — `SAP_CA_FILE`          |
+| 200                | 200            | `ok`      | Host, ICF and logon all working                                       |
+| 200                | 403 / 404      | `icf`     | SAP is up and will not serve the node. **No credential was examined** |
+| 200                | 401            | `logon`   | The ICF serves it; SAP refused the credential                         |
 
-`layer: "icf"` is the one worth dwelling on. SAP answers 403 *before* offering a logon, so the ticket,
+`layer: "icf"` is the one worth dwelling on. SAP answers 403 _before_ offering a logon, so the ticket,
 the user and the authorisations play no part — the ICF node is inactive (SICF) or something in front
 of the port is filtering. Read as an authentication failure it sends you to `klist` for a problem that
 `klist` cannot see, which is exactly what happened on two systems before this existed.
@@ -276,7 +276,7 @@ pointed at the wrong system is visible even while that system is refusing it.
 When the probe fails, `status` becomes `degraded` rather than `healthy`. When there is no transport to
 probe with, `reachability` is `{"checked": false}` and nothing is claimed either way.
 
-The probe proves the *host and the logon*, not ADT. To prove the ADT services themselves answer, use
+The probe proves the _host and the logon_, not ADT. To prove the ADT services themselves answer, use
 `adtDiscovery` or `checkJsonRpcEndpoint`. (`adtCoreDiscovery` was removed: it answered 400 on every
 system tested, which is why it made a poor liveness probe.)
 
@@ -284,27 +284,27 @@ system tested, which is why it made a poor liveness probe.)
 
 ## 6. When it fails
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `SAP rejected the client certificate (HTTP 401)` | The four preconditions in §2 — usually the `CERTRULE` mapping | Compare the `subject` in the error with the `CERTRULE` entry, character for character |
-| The same, and the port has no `VCLIENT` | The ICM never asked for a certificate, so none was sent | Read `icm/server_port_<n>` for your port — §2 |
-| Same, and `No client certificate was loaded for this connection at all` | Certificate mode is not actually on | Check `SAP_CERT_FILE` reached the process; `healthcheck` shows `authMode` |
-| `uses a PKCS#12 encryption that OpenSSL … refuses` | `sapgenpse export_p12` legacy encryption | Re-wrap or use PEM — §3 |
-| `wrong or missing SAP_CERT_PASSPHRASE` | PKCS#12 password / PSE PIN wrong | — |
-| `is not readable as PEM` | A PKCS#12 or DER file not named `.p12`/`.pfx` | Rename, or `certutil -encode` a DER to PEM |
-| `The *server* certificate … was not trusted` | SAP's own certificate is from an internal CA | `SAP_CA_FILE`, or `NODE_TLS_REJECT_UNAUTHORIZED=0` for development |
-| `The TLS handshake … failed (ECONNRESET)` | The ICM asked for a certificate and rejected the one offered | CA not in `STRUST`, or the certificate has expired |
-| `Certificate authentication needs an https URL` | `SAP_URL` is `http://` | A certificate travels in the TLS handshake; there isn't one |
-| `needs SAP_CERT_FILE` | Certificate mode without a certificate | Set it, or set `SAP_AUTH_MODE=kerberos` |
+| Symptom                                                                 | Cause                                                         | Fix                                                                                   |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `SAP rejected the client certificate (HTTP 401)`                        | The four preconditions in §2 — usually the `CERTRULE` mapping | Compare the `subject` in the error with the `CERTRULE` entry, character for character |
+| The same, and the port has no `VCLIENT`                                 | The ICM never asked for a certificate, so none was sent       | Read `icm/server_port_<n>` for your port — §2                                         |
+| Same, and `No client certificate was loaded for this connection at all` | Certificate mode is not actually on                           | Check `SAP_CERT_FILE` reached the process; `healthcheck` shows `authMode`             |
+| `uses a PKCS#12 encryption that OpenSSL … refuses`                      | `sapgenpse export_p12` legacy encryption                      | Re-wrap or use PEM — §3                                                               |
+| `wrong or missing SAP_CERT_PASSPHRASE`                                  | PKCS#12 password / PSE PIN wrong                              | —                                                                                     |
+| `is not readable as PEM`                                                | A PKCS#12 or DER file not named `.p12`/`.pfx`                 | Rename, or `certutil -encode` a DER to PEM                                            |
+| `The *server* certificate … was not trusted`                            | SAP's own certificate is from an internal CA                  | `SAP_CA_FILE`, or `NODE_TLS_REJECT_UNAUTHORIZED=0` for development                    |
+| `The TLS handshake … failed (ECONNRESET)`                               | The ICM asked for a certificate and rejected the one offered  | CA not in `STRUST`, or the certificate has expired                                    |
+| `Certificate authentication needs an https URL`                         | `SAP_URL` is `http://`                                        | A certificate travels in the TLS handshake; there isn't one                           |
+| `needs SAP_CERT_FILE`                                                   | Certificate mode without a certificate                        | Set it, or set `SAP_AUTH_MODE=kerberos`                                               |
 
 And in Kerberos mode:
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `SAP refused the request before offering a logon (HTTP 403)` | The ICF node is not active, or a Web Dispatcher is filtering the path. **Not** an authentication problem | SICF: activate `/default_host/sap/bc/adt` with its subtree. Confirm with Eclipse ADT, which fails identically |
-| `SAP received a Kerberos token and rejected it (HTTP 401)`, SAP falls back to `Basic` | The ticket reached SAP and could not be mapped to a user | The user must exist and be unlocked **in that client**; check the SPNEGO/`USREXTID` mapping. `klist` will look healthy and is a dead end here |
-| `SPNEGO/Kerberos authentication failed … and no token was sent` | No ticket was offered at all | `klist` — is there a TGT, has it expired, is the VPN up? |
-| `curl was not found` | No curl with GSS/Schannel support on `PATH` | Set `SSO_CURL_PATH`. Node cannot do SPNEGO, which is why curl is shelled out to |
+| Symptom                                                                               | Cause                                                                                                    | Fix                                                                                                                                           |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SAP refused the request before offering a logon (HTTP 403)`                          | The ICF node is not active, or a Web Dispatcher is filtering the path. **Not** an authentication problem | SICF: activate `/default_host/sap/bc/adt` with its subtree. Confirm with Eclipse ADT, which fails identically                                 |
+| `SAP received a Kerberos token and rejected it (HTTP 401)`, SAP falls back to `Basic` | The ticket reached SAP and could not be mapped to a user                                                 | The user must exist and be unlocked **in that client**; check the SPNEGO/`USREXTID` mapping. `klist` will look healthy and is a dead end here |
+| `SPNEGO/Kerberos authentication failed … and no token was sent`                       | No ticket was offered at all                                                                             | `klist` — is there a TGT, has it expired, is the VPN up?                                                                                      |
+| `curl was not found`                                                                  | No curl with GSS/Schannel support on `PATH`                                                              | Set `SSO_CURL_PATH`. Node cannot do SPNEGO, which is why curl is shelled out to                                                               |
 
 A logon that fails at startup takes the process with it, so the client sees a server that died rather
 than an error. The message is therefore the whole diagnosis: the reachability probe runs on the way
@@ -323,11 +323,11 @@ user is usually `USTYP = 'B'` (System) with integration roles and no developer r
 
 `/sap/bc/ping` tells the two apart in one request, because it needs a logon but is not ADT:
 
-| `/sap/bc/ping` | `/sap/bc/adt/discovery` | What it is |
-| --- | --- | --- |
-| 401 | 401 | The certificate is not mapped — `CERTRULE`, §2 |
-| **200 + session cookie** | **403** | Mapped and logged on. Missing `S_DEVELOP` |
-| 200 | 200 | Working |
+| `/sap/bc/ping`           | `/sap/bc/adt/discovery` | What it is                                     |
+| ------------------------ | ----------------------- | ---------------------------------------------- |
+| 401                      | 401                     | The certificate is not mapped — `CERTRULE`, §2 |
+| **200 + session cookie** | **403**                 | Mapped and logged on. Missing `S_DEVELOP`      |
+| 200                      | 200                     | Working                                        |
 
 **The fix is `S_DEVELOP`**, plus a user type of Service (`S`) or Dialog (`A`). Everything below is a
 way to get value out of the system while that is being arranged — not a substitute for it.
@@ -336,7 +336,7 @@ way to get value out of the system while that is being arranged — not a substi
 
 The RFC route needs a CSRF token, and a token only comes from a logged-on ICF node. The ADT bootstrap
 is where the server normally gets one, so ADT's 403 costs the RFC tools too, even though SAP would
-serve them. `ABAP_MCP_RFC_FALLBACK=1` takes the session from a node this user *does* reach:
+serve them. `ABAP_MCP_RFC_FALLBACK=1` takes the session from a node this user _does_ reach:
 
 ```jsonc
 "env": {
@@ -390,17 +390,17 @@ immediately.
 Every mode runs in the Docker image, and the difference between them is the whole point of this
 section: **a certificate is a file, and a Kerberos credential is a session the container is not part
 of.** One is mounted, the other has to be reconstructed. OAuth is the third case and the easiest —
-the credential is *fetched*, so there is nothing to mount and nothing to reconstruct; a token
+the credential is _fetched_, so there is nothing to mount and nothing to reconstruct; a token
 endpoint the container can reach is the whole requirement.
 
 ### What the image provides
 
-| | Why it is there |
-| --- | --- |
+|                                     | Why it is there                                                                                                                                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `node:22-bookworm-slim`, not Alpine | Debian's curl is linked against GSS-API. Alpine's is not — and that failure is invisible: such a curl does not error, it never sends a token, and SAP answers the same 401 an expired ticket produces |
-| `krb5-user` | `kinit`, because a keytab is the only credential a container can hold unattended, and `klist`, which is the first thing to run when a logon fails |
-| `docker-entrypoint.sh` | Prepares the credential, then `exec`s the server. Everything it prints goes to **stderr** — stdout is the MCP frame stream |
-| No `/etc/krb5.conf` | The placeholder `krb5-config` installs names a realm that does not exist. It is deleted so that "the operator mounted a krb5.conf" is distinguishable from "the package is installed" |
+| `krb5-user`                         | `kinit`, because a keytab is the only credential a container can hold unattended, and `klist`, which is the first thing to run when a logon fails                                                     |
+| `docker-entrypoint.sh`              | Prepares the credential, then `exec`s the server. Everything it prints goes to **stderr** — stdout is the MCP frame stream                                                                            |
+| No `/etc/krb5.conf`                 | The placeholder `krb5-config` installs names a realm that does not exist. It is deleted so that "the operator mounted a krb5.conf" is distinguishable from "the package is installed"                 |
 
 The entrypoint does not re-implement `resolveAuthMode()` — it calls the server's own compiled copy,
 loading `.env` the way `index.ts` does. The script and the process it starts therefore cannot disagree
@@ -418,7 +418,7 @@ docker run -i --rm --env-file .env \
 ```
 
 The entrypoint does nothing here but hand over. **The second mount is the one that gets forgotten.**
-The image trusts only the public CA bundle, so the internal CA that signs *SAP's own* certificate — the
+The image trusts only the public CA bundle, so the internal CA that signs _SAP's own_ certificate — the
 one the host has trusted since it joined the domain — is unknown inside the container, and the
 handshake fails with `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` before any of §2 comes into play. Copying a
 desktop `.env` in wholesale hides that rather than fixing it: `NODE_TLS_REJECT_UNAUTHORIZED=0` is a
@@ -449,10 +449,10 @@ they often do not, and the resulting 401 reads exactly like a missing SPNEGO map
 
 **The credential**, of which there are two kinds:
 
-| | |
-| --- | --- |
-| **A keytab** — `SAP_KRB_KEYTAB` | The only one that works unattended, and the only one that outlives the ticket. The entrypoint runs `kinit -k -t` immediately, so a wrong principal or a stale KVNO fails at startup and says which, and it exports `KRB5_CLIENT_KTNAME` — with a client keytab set, MIT krb5 acquires a fresh TGT by itself when the cached one expires, so a container running for days does not stop working after ten hours |
-| **A mounted ticket cache** — `KRB5CCNAME` | A ticket the host already holds: `-v /tmp/krb5cc_1000:/krb5/ccache:ro -e KRB5CCNAME=FILE:/krb5/ccache`. Zero setup, and it expires when the host's does. Mounted read-only it also cannot be refreshed in place, which is the second reason it is not the unattended answer |
+|                                           |                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A keytab** — `SAP_KRB_KEYTAB`           | The only one that works unattended, and the only one that outlives the ticket. The entrypoint runs `kinit -k -t` immediately, so a wrong principal or a stale KVNO fails at startup and says which, and it exports `KRB5_CLIENT_KTNAME` — with a client keytab set, MIT krb5 acquires a fresh TGT by itself when the cached one expires, so a container running for days does not stop working after ten hours |
+| **A mounted ticket cache** — `KRB5CCNAME` | A ticket the host already holds: `-v /tmp/krb5cc_1000:/krb5/ccache:ro -e KRB5CCNAME=FILE:/krb5/ccache`. Zero setup, and it expires when the host's does. Mounted read-only it also cannot be refreshed in place, which is the second reason it is not the unattended answer                                                                                                                                    |
 
 `KRB5CCNAME` defaults to `FILE:/tmp/krb5cc` in the image, because the server runs as `node` (uid 1000)
 and owns nothing else. A keytab mounted from a Linux host keeps that host's ownership, so one that is
@@ -474,14 +474,14 @@ Linux host or CI, with a keytab issued for a service account.
 
 ### Variables this adds
 
-| Variable | Meaning |
-| --- | --- |
-| `SAP_KRB_KEYTAB` | Path *inside the container* of a read-only mounted keytab. A keytab is a password in another form — `.gitignore` and `.dockerignore` both exclude `*.keytab` so one cannot be committed or baked into a layer |
-| `SAP_KRB_PRINCIPAL` | Which principal in the keytab to use. Defaults to the first one `klist -k` lists, which is right more often than `kinit`'s own default of `host/<hostname>` — a name nothing in a container has a key for |
-| `SAP_KRB_REALM` | The realm, when no `krb5.conf` is mounted. Active Directory: the domain in upper case |
-| `SAP_KRB_KDC` | The KDC host, when it has no DNS SRV record |
-| `KRB5CCNAME` | The ticket cache. Set it to a mounted one to use a ticket the host already has |
-| `KRB5_CONFIG` | Your own krb5 configuration, ahead of both `/etc/krb5.conf` and `SAP_KRB_REALM` |
+| Variable            | Meaning                                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SAP_KRB_KEYTAB`    | Path _inside the container_ of a read-only mounted keytab. A keytab is a password in another form — `.gitignore` and `.dockerignore` both exclude `*.keytab` so one cannot be committed or baked into a layer |
+| `SAP_KRB_PRINCIPAL` | Which principal in the keytab to use. Defaults to the first one `klist -k` lists, which is right more often than `kinit`'s own default of `host/<hostname>` — a name nothing in a container has a key for     |
+| `SAP_KRB_REALM`     | The realm, when no `krb5.conf` is mounted. Active Directory: the domain in upper case                                                                                                                         |
+| `SAP_KRB_KDC`       | The KDC host, when it has no DNS SRV record                                                                                                                                                                   |
+| `KRB5CCNAME`        | The ticket cache. Set it to a mounted one to use a ticket the host already has                                                                                                                                |
+| `KRB5_CONFIG`       | Your own krb5 configuration, ahead of both `/etc/krb5.conf` and `SAP_KRB_REALM`                                                                                                                               |
 
 ### Checking it
 
@@ -508,16 +508,16 @@ way it would not be on an image without one.
 
 ### When it fails, in here specifically
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `exec /usr/local/bin/docker-entrypoint.sh: no such file or directory` | The entrypoint was checked out with CRLF, so its shebang reads `/bin/sh\r` | `.gitattributes` pins `*.sh` to LF; re-check-out the file after picking that up |
-| `curl … built without SPNEGO support` | The image was rebuilt on Alpine | Debian, for the reason in the table above |
-| `this container has no krb5 configuration` | No realm to ask in | Mount `/etc/krb5.conf`, or set `SAP_KRB_REALM` |
-| `this container holds no credential` | Kerberos mode with neither keytab nor ticket cache | The two mounts above — or certificate mode |
-| `SAP_KRB_KEYTAB points at … which this container cannot read` | Host ownership carried across the bind mount; the server is uid 1000 | Relax the file and restrict the directory around it |
-| `kinit could not get a ticket` | Wrong principal, stale KVNO after a password change, or no route to the KDC on port 88 | `klist -k` on the keytab lists what is actually in it |
-| `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` | SAP's own certificate is signed by a CA the image does not know | Mount the root CA, `SAP_CA_FILE` |
-| Every `readServerGuide` / `readSkill` answers file-not-found | `docs/`, `skills/` or `AGENTS.md` missing from the image | They are copied in deliberately; a `--recurse-submodules` clone is also needed for `skills/Development` |
+| Symptom                                                               | Cause                                                                                  | Fix                                                                                                     |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `exec /usr/local/bin/docker-entrypoint.sh: no such file or directory` | The entrypoint was checked out with CRLF, so its shebang reads `/bin/sh\r`             | `.gitattributes` pins `*.sh` to LF; re-check-out the file after picking that up                         |
+| `curl … built without SPNEGO support`                                 | The image was rebuilt on Alpine                                                        | Debian, for the reason in the table above                                                               |
+| `this container has no krb5 configuration`                            | No realm to ask in                                                                     | Mount `/etc/krb5.conf`, or set `SAP_KRB_REALM`                                                          |
+| `this container holds no credential`                                  | Kerberos mode with neither keytab nor ticket cache                                     | The two mounts above — or certificate mode                                                              |
+| `SAP_KRB_KEYTAB points at … which this container cannot read`         | Host ownership carried across the bind mount; the server is uid 1000                   | Relax the file and restrict the directory around it                                                     |
+| `kinit could not get a ticket`                                        | Wrong principal, stale KVNO after a password change, or no route to the KDC on port 88 | `klist -k` on the keytab lists what is actually in it                                                   |
+| `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`                                   | SAP's own certificate is signed by a CA the image does not know                        | Mount the root CA, `SAP_CA_FILE`                                                                        |
+| Every `readServerGuide` / `readSkill` answers file-not-found          | `docs/`, `skills/` or `AGENTS.md` missing from the image                               | They are copied in deliberately; a `--recurse-submodules` clone is also needed for `skills/Development` |
 
 ---
 
@@ -557,7 +557,7 @@ Session expiry is handled identically in both modes: the retry in `index.ts` re-
 bootstrap applies, on a CSRF rejection or a 401.
 
 The code is [src/certauth.ts](../src/certauth.ts), tested in
-[src/__tests__/certauth.test.ts](../src/__tests__/certauth.test.ts) — which includes a real mutual-TLS
+[src/**tests**/certauth.test.ts](../src/__tests__/certauth.test.ts) — which includes a real mutual-TLS
 exchange against a local server configured the way `verify_client = 2` configures the ICM, so the
 handshake is genuinely exercised rather than stubbed.
 
@@ -616,18 +616,18 @@ it is that it works today and locks an account on the morning the password expir
 
 ### When it fails
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `SAP rejected the password … (HTTP 401)` | Wrong password, or expired and needing a change in SAP GUI first | Fix it before restarting — each start costs an attempt |
-| The same, and the password is definitely right | The user does not exist **in that client**, or is locked already | `SU01`, and check `SAP_CLIENT` |
-| The same, on a user that works in SAP GUI | A System (`USTYP = 'B'`) user cannot log on interactively | Service (`S`) or Dialog (`A`) |
-| `accepted the logon and refused the resource (HTTP 403)` | Authenticated, missing `S_DEVELOP` | §6, and `ABAP_MCP_RFC_FALLBACK` if the RFC tools alone would do |
-| `A password sent over plain http…` | `SAP_URL` is `http://` | https |
-| `The server certificate … was not trusted` | Internal CA | `SAP_CA_FILE`. It matters more here: without it nothing proves the host being sent a password is really SAP |
+| Symptom                                                  | Cause                                                            | Fix                                                                                                         |
+| -------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `SAP rejected the password … (HTTP 401)`                 | Wrong password, or expired and needing a change in SAP GUI first | Fix it before restarting — each start costs an attempt                                                      |
+| The same, and the password is definitely right           | The user does not exist **in that client**, or is locked already | `SU01`, and check `SAP_CLIENT`                                                                              |
+| The same, on a user that works in SAP GUI                | A System (`USTYP = 'B'`) user cannot log on interactively        | Service (`S`) or Dialog (`A`)                                                                               |
+| `accepted the logon and refused the resource (HTTP 403)` | Authenticated, missing `S_DEVELOP`                               | §6, and `ABAP_MCP_RFC_FALLBACK` if the RFC tools alone would do                                             |
+| `A password sent over plain http…`                       | `SAP_URL` is `http://`                                           | https                                                                                                       |
+| `The server certificate … was not trusted`               | Internal CA                                                      | `SAP_CA_FILE`. It matters more here: without it nothing proves the host being sent a password is really SAP |
 
 The code is [src/passwordauth.ts](../src/passwordauth.ts), tested in
-[src/__tests__/passwordauth.test.ts](../src/__tests__/passwordauth.test.ts). The latch that stops the
-retry is tested in [src/__tests__/server.test.ts](../src/__tests__/server.test.ts), by calling five
+[src/**tests**/passwordauth.test.ts](../src/__tests__/passwordauth.test.ts). The latch that stops the
+retry is tested in [src/**tests**/server.test.ts](../src/__tests__/server.test.ts), by calling five
 tools against a logon that always fails and asserting SAP was contacted once.
 
 ---
@@ -671,17 +671,17 @@ SAP_OAUTH_CLIENT_ID=sb-abap-agent!t1234        # 'clientid' in the service key
 SAP_OAUTH_CLIENT_SECRET=<'clientsecret'>       # 'clientsecret'
 ```
 
-| Variable | Meaning |
-| --- | --- |
-| `SAP_OAUTH_TOKEN_URL` | The token endpoint. `/sap/bc/sec/oauth2/token` on AS ABAP; the service key's `url` plus `/oauth/token` on BTP. https, always. |
-| `SAP_OAUTH_CLIENT_ID` | The client registered in `SOAUTH2`, or `clientid` from a service key. **Setting it selects the mode.** |
-| `SAP_OAUTH_CLIENT_SECRET` | Its secret. Required for `client_credentials`, where it is the whole credential. |
-| `SAP_OAUTH_GRANT` | `client_credentials` (default), `refresh_token`, `password` or `static`. |
-| `SAP_OAUTH_SCOPE` | Space-separated scopes. Unset asks for the client's defaults, which is usually right. |
-| `SAP_OAUTH_REFRESH_TOKEN` | The `refresh_token` grant's credential. Selects that grant by itself. |
-| `SAP_OAUTH_TOKEN` | An access token minted elsewhere. Selects the `static` grant by itself. |
-| `SAP_OAUTH_CLIENT_AUTH` | `basic` (default) or `post`. Only worth changing when a server rejects a secret that is right. |
-| `SAP_CA_FILE` | As elsewhere — but here it is **added** to the public roots rather than replacing them, because the token endpoint is often a different host with a public certificate. |
+| Variable                  | Meaning                                                                                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SAP_OAUTH_TOKEN_URL`     | The token endpoint. `/sap/bc/sec/oauth2/token` on AS ABAP; the service key's `url` plus `/oauth/token` on BTP. https, always.                                           |
+| `SAP_OAUTH_CLIENT_ID`     | The client registered in `SOAUTH2`, or `clientid` from a service key. **Setting it selects the mode.**                                                                  |
+| `SAP_OAUTH_CLIENT_SECRET` | Its secret. Required for `client_credentials`, where it is the whole credential.                                                                                        |
+| `SAP_OAUTH_GRANT`         | `client_credentials` (default), `refresh_token`, `password` or `static`.                                                                                                |
+| `SAP_OAUTH_SCOPE`         | Space-separated scopes. Unset asks for the client's defaults, which is usually right.                                                                                   |
+| `SAP_OAUTH_REFRESH_TOKEN` | The `refresh_token` grant's credential. Selects that grant by itself.                                                                                                   |
+| `SAP_OAUTH_TOKEN`         | An access token minted elsewhere. Selects the `static` grant by itself.                                                                                                 |
+| `SAP_OAUTH_CLIENT_AUTH`   | `basic` (default) or `post`. Only worth changing when a server rejects a secret that is right.                                                                          |
+| `SAP_CA_FILE`             | As elsewhere — but here it is **added** to the public roots rather than replacing them, because the token endpoint is often a different host with a public certificate. |
 
 `SAP_USER` stays required and is **not transmitted**, as in certificate mode: SAP decides the user
 from the token. It is what `healthcheck` and `listLoggedOnUsers` report, so it has to agree with the
@@ -689,12 +689,12 @@ user the client is bound to or those answers will be wrong.
 
 ### Which grant
 
-| Grant | When | Renews itself |
-| --- | --- | --- |
-| `client_credentials` | The default, and the one for anything unattended. The client *is* the identity | Yes — a new token whenever one is needed |
-| `refresh_token` | An authorization-code flow someone completed in a browser, whose long-lived half you hold | Until the refresh token expires or is revoked |
-| `password` | A `SOAUTH2` configuration that offers nothing else | Yes, and see the warning below |
-| `static` | A token from `cf oauth-token`, a proxy, or a test | **No.** A rejection is final until restart |
+| Grant                | When                                                                                      | Renews itself                                 |
+| -------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `client_credentials` | The default, and the one for anything unattended. The client _is_ the identity            | Yes — a new token whenever one is needed      |
+| `refresh_token`      | An authorization-code flow someone completed in a browser, whose long-lived half you hold | Until the refresh token expires or is revoked |
+| `password`           | A `SOAUTH2` configuration that offers nothing else                                        | Yes, and see the warning below                |
+| `static`             | A token from `cf oauth-token`, a proxy, or a test                                         | **No.** A rejection is final until restart    |
 
 **The authorization-code flow is deliberately not implemented.** It needs a browser and a redirect
 listener, and a server an MCP client starts over stdio has neither — there is no window to open and
@@ -710,16 +710,16 @@ no port to redirect to. Complete it once by hand and put the refresh token in
 This is the part worth reading before the first token is issued, because the two failures look
 similar and are not:
 
-| | Refused by the **token endpoint** | Refused by **SAP** |
-| --- | --- | --- |
-| What it means | The client could not authenticate, or is not allowed this grant | The token is valid; SAP will not turn it into a user |
-| Typically | Wrong `SAP_OAUTH_CLIENT_SECRET`, wrong tenant, grant not enabled | Scope does not cover the ICF node, no user in this client |
-| Retried? | **No.** Latched after one attempt | Yes — once with a fresh token, and by every later tool call |
-| Costs a logon attempt? | **Yes**, and see below | No |
+|                        | Refused by the **token endpoint**                                | Refused by **SAP**                                          |
+| ---------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
+| What it means          | The client could not authenticate, or is not allowed this grant  | The token is valid; SAP will not turn it into a user        |
+| Typically              | Wrong `SAP_OAUTH_CLIENT_SECRET`, wrong tenant, grant not enabled | Scope does not cover the ICF node, no user in this client   |
+| Retried?               | **No.** Latched after one attempt                                | Yes — once with a fresh token, and by every later tool call |
+| Costs a logon attempt? | **Yes**, and see below                                           | No                                                          |
 
 **An OAuth 2.0 client on AS ABAP is a user in `SU01`.** A wrong client secret is therefore a failed
 logon against `login/fails_to_user_lock` in exactly the way a wrong password is, and three of them
-lock the client for every consumer of it. So a refused *token request* is latched and re-thrown on
+lock the client for every consumer of it. So a refused _token request_ is latched and re-thrown on
 every later call **without contacting SAP**, the same rule password mode follows.
 
 A token SAP refuses is the opposite case. No SAP user record is touched by it, minting another costs
@@ -755,28 +755,100 @@ session has to be re-established — so an `expiresAt` in the past on a long-run
 
 The reachability probe works in this mode too, and carries a live token rather than the one the
 server booted with. It has one verdict the other modes cannot produce: when no token can be obtained
-at all, `layer` is `logon` and the summary says SAP *was never asked*. That distinction matters here
+at all, `layer` is `logon` and the summary says SAP _was never asked_. That distinction matters here
 more than anywhere else, because the token endpoint is frequently not the SAP host — reported as an
 unreachable SAP it would send you to the wrong system entirely.
 
 ### When OAuth fails
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `rejected the client credentials … invalid_client` | Wrong secret, wrong tenant, or the client does not exist | Check `SAP_OAUTH_CLIENT_SECRET` and the tenant in the URL. It will not be retried — each attempt is a failed logon |
-| The same, and the secret is definitely right | The server wants the credentials in the body | `SAP_OAUTH_CLIENT_AUTH=post` |
-| `will not let it use the … grant` | `unauthorized_client`: grant types are per client in `SOAUTH2` | Enable it there, or use a grant the client has |
-| `refused the requested scope` | `invalid_scope` | Leave `SAP_OAUTH_SCOPE` unset, or name a scope assigned to this client |
-| `rejected the refresh token … invalid_grant` | Expired, revoked, or already rotated away | Run the authorization-code flow again. BTP rotates on every use |
-| `answered HTTP 404` | `SAP_OAUTH_TOKEN_URL` is not the token endpoint | `/sap/bc/sec/oauth2/token`, and that ICF node has to be active in `SICF` |
-| `answered … with a body that is not JSON` | The URL reaches an ICF logon page or a proxy | Same as above |
-| `SAP refused the OAuth 2.0 access token (HTTP 401)` | SAP will not map the token to a user | Scope covering this node, a user in this client, OAuth logon allowed on the node |
-| `accepted the token and refused the resource (HTTP 403)` | Authenticated, missing `S_DEVELOP` | [§6](#6-when-it-fails), and `ABAP_MCP_RFC_FALLBACK` if the RFC tools alone would do |
-| `can only present a bearer token` | The endpoint issued a non-bearer token | Not supported: the token is presented in an `Authorization` header |
-| `The server certificate … was not trusted` | Internal CA on either host | `SAP_CA_FILE` — it covers both, since it is added to the public roots here |
+| Symptom                                                  | Cause                                                          | Fix                                                                                                                |
+| -------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `rejected the client credentials … invalid_client`       | Wrong secret, wrong tenant, or the client does not exist       | Check `SAP_OAUTH_CLIENT_SECRET` and the tenant in the URL. It will not be retried — each attempt is a failed logon |
+| The same, and the secret is definitely right             | The server wants the credentials in the body                   | `SAP_OAUTH_CLIENT_AUTH=post`                                                                                       |
+| `will not let it use the … grant`                        | `unauthorized_client`: grant types are per client in `SOAUTH2` | Enable it there, or use a grant the client has                                                                     |
+| `refused the requested scope`                            | `invalid_scope`                                                | Leave `SAP_OAUTH_SCOPE` unset, or name a scope assigned to this client                                             |
+| `rejected the refresh token … invalid_grant`             | Expired, revoked, or already rotated away                      | Run the authorization-code flow again. BTP rotates on every use                                                    |
+| `answered HTTP 404`                                      | `SAP_OAUTH_TOKEN_URL` is not the token endpoint                | `/sap/bc/sec/oauth2/token`, and that ICF node has to be active in `SICF`                                           |
+| `answered … with a body that is not JSON`                | The URL reaches an ICF logon page or a proxy                   | Same as above                                                                                                      |
+| `SAP refused the OAuth 2.0 access token (HTTP 401)`      | SAP will not map the token to a user                           | Scope covering this node, a user in this client, OAuth logon allowed on the node                                   |
+| `accepted the token and refused the resource (HTTP 403)` | Authenticated, missing `S_DEVELOP`                             | [§6](#6-when-it-fails), and `ABAP_MCP_RFC_FALLBACK` if the RFC tools alone would do                                |
+| `can only present a bearer token`                        | The endpoint issued a non-bearer token                         | Not supported: the token is presented in an `Authorization` header                                                 |
+| `The server certificate … was not trusted`               | Internal CA on either host                                     | `SAP_CA_FILE` — it covers both, since it is added to the public roots here                                         |
 
 The code is [src/oauth.ts](../src/oauth.ts), tested in
-[src/__tests__/oauth.test.ts](../src/__tests__/oauth.test.ts) — which includes a live round trip
+[src/**tests**/oauth.test.ts](../src/__tests__/oauth.test.ts) — which includes a live round trip
 against a local HTTPS server playing both the token endpoint and SAP, so the form encoding, the
 `Basic` client authentication and the bearer header are genuinely exercised rather than stubbed. The
 token cache and the single retry after a revoked token are tested there too.
+
+## 12. Streamable HTTP transport, and per-connection sessions
+
+Everything above describes **stdio** — one process, started by one client, with one SAP logon for
+its whole life. Set `ABAP_MCP_TRANSPORT=http` to run this server as a long-lived container that
+several team members' MCP clients connect to over the network instead, using the SDK's Streamable
+HTTP transport.
+
+HTTP hosting changes _how a session is established_, not what a session is once established: the ADT
+tools, the RFC/JSON-RPC path, locking, everything in [docs/MCP-Tools.md](MCP-Tools.md) works
+identically. What changes is who logs on. In stdio mode this server picks one of the four modes above
+from the environment and logs on once, at startup, as one identity shared by whoever is on the other
+end of the pipe — which is fine, because there is exactly one client. A container reachable by a
+whole team cannot make that assumption without collapsing everyone into one shared SAP user and one
+shared set of locks. So HTTP mode does not use `resolveAuthMode()` at all: **every MCP session
+authenticates with its own SAP OAuth 2.0 access token**, supplied by that client, and gets its own SAP
+logon built from it — the OAuth `static` grant from [§11](#11-oauth-20-mode), one per connection
+rather than one for the process.
+
+Concretely: each MCP client sends `Authorization: Bearer <token>` on every HTTP request to `/mcp`,
+where `<token>` is an access token that client obtained from SAP's own OAuth 2.0 authorization server
+(or BTP's), scoped and issued the same way any OAuth client in [§11](#11-oauth-20-mode) would be. On
+the first request (`initialize`, no `Mcp-Session-Id` yet) this server takes that token, builds a
+fresh ADT session from it exactly as `SAP_OAUTH_TOKEN` (the `static` grant) would in stdio mode, and
+mints an `Mcp-Session-Id` the client repeats on every later request for that session. A missing or
+malformed `Authorization` header is rejected before any SAP traffic — the token is this transport's
+only credential, and there is no separate shared secret to fall back on.
+
+**This is real per-user isolation, not a shared technical account with an HTTP front door bolted on.**
+Two team members connecting at the same time get two independent SAP sessions, two independent sets
+of locks, and two independent identities in whatever `SU53`/audit trail SAP keeps — because each is a
+distinct ADT logon built from a distinct token, not two MCP clients sharing one. The `SAP_OAUTH_*` and
+`SAP_AUTH_MODE` variables from the sections above are irrelevant to a container run this way; nothing
+at the container level decides who a session logs on as, so there is no shared logon to configure in
+the first place.
+
+The `static` grant this reduces to does not renew itself ([§11](#11-oauth-20-mode)'s grant table): a
+session whose token has expired fails outright rather than silently minting a replacement, and the
+client is expected to reconnect with a fresh one — the same way any OAuth client would after a token
+expires, and consistent with the fact that this server was never handed a client secret or a refresh
+token it could use to mint one on that session's behalf.
+
+### Configuration
+
+```bash
+ABAP_MCP_TRANSPORT=http      # default: stdio
+ABAP_MCP_HTTP_PORT=3000      # default: 3000
+ABAP_MCP_HTTP_HOST=0.0.0.0   # default: 0.0.0.0 — all interfaces, the usual choice in a container
+```
+
+| Variable             | Meaning                                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `ABAP_MCP_TRANSPORT` | `stdio` (default) or `http`. Everything else in this section applies only to `http`.                                                |
+| `ABAP_MCP_HTTP_PORT` | The port the Streamable HTTP endpoint listens on, at `/mcp`.                                                                        |
+| `ABAP_MCP_HTTP_HOST` | The address to bind. `0.0.0.0` for a container; `127.0.0.1` to restrict to loopback (e.g. behind a reverse proxy on the same host). |
+
+`SAP_URL`, `SAP_CLIENT`, `SAP_LANGUAGE`, `SAP_CA_FILE` and `NODE_TLS_REJECT_UNAUTHORIZED` still apply
+— they describe the SAP _system_, which is the same for every session. `SAP_USER` is still required to
+construct the underlying ADT client (as in every non-password mode, it is a placeholder never
+transmitted; SAP decides the real user from each session's own token) but has no bearing on who any
+given session actually is.
+
+This mode still runs `docker-entrypoint.sh`, but its Kerberos setup is skipped when
+`ABAP_MCP_TRANSPORT=http` is set — `resolveAuthMode()`'s pick describes nothing real once every
+session logs on with its own token, so there is nothing for it to prepare.
+
+### What is deliberately not here
+
+CORS handling, DNS-rebinding host/origin allow-listing, TLS termination, rate limiting and token
+refresh are left to the deployment: put a reverse proxy or ingress in front that terminates TLS and
+enforces network access, the same as any other internal service. Nothing about the SAP side of this
+server changes if one is added later.
