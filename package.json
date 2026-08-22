@@ -54,9 +54,9 @@
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
-    "@types/node": "^22.10.10",
+    "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^4.1.11",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   }
 }
