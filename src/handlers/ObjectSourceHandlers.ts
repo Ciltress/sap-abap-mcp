@@ -1,5 +1,5 @@
-import { BaseHandler } from './BaseHandler';
-import type { ToolSpec } from './BaseHandler';
+import { BaseHandler } from './BaseHandler.js';
+import type { ToolSpec } from './BaseHandler.js';
 
 export class ObjectSourceHandlers extends BaseHandler {
   protected toolSpecs(): ToolSpec[] {

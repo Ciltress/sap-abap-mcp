@@ -17,9 +17,14 @@
 
 import { config } from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { AbapAdtServer } from './server.js';
 
-config({ path: path.resolve(__dirname, '../.env') });
+// The build emits ESM, which has no __dirname; import.meta.url is the equivalent
+// and resolves the same way from dist/index.js as the old one did.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+config({ path: path.resolve(HERE, '../.env') });
 
 export { AbapAdtServer } from './server.js';
 export type { ServerDependencies } from './server.js';

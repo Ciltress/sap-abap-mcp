@@ -1,8 +1,8 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import type { ToolDefinition } from "../types/tools";
+import type { ToolDefinition } from "../types/tools.js";
 import type { ADTClient } from "abap-adt-api";
 import { performance } from 'perf_hooks';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '../lib/logger.js';
 
 /**
  * One tool: what a caller must know to use it, and what it does.

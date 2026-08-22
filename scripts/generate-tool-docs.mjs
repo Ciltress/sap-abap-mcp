@@ -8,17 +8,17 @@
  * the committed file to the same output, which is what stops the reference from
  * drifting away from the code between runs.
  */
-import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let toolDocs;
 try {
-    toolDocs = require(path.join(root, 'dist', 'lib', 'toolDocs.js'));
+    // An ESM build, so this is a dynamic import rather than a require — and the
+    // specifier has to be a file:// URL for it to work on Windows.
+    toolDocs = await import(pathToFileURL(path.join(root, 'dist', 'lib', 'toolDocs.js')).href);
 } catch (error) {
     console.error('Could not load dist/lib/toolDocs.js — run `npm run build` first.');
     console.error(String(error?.message ?? error));

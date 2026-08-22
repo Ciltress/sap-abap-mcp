@@ -6,7 +6,7 @@
  *
  * This is the by-hand verification of docs/JSON-RPC.md §8 made
  * repeatable. It needs a reachable system and a valid Kerberos ticket, which is
- * why it is a script and not a jest suite; the offline equivalent that runs in
+ * why it is a script and not a vitest suite; the offline equivalent that runs in
  * CI is src/__tests__/jsonRpcHandlers.test.ts.
  *
  *   npm run build && node scripts/live-jsonrpc-check.mjs

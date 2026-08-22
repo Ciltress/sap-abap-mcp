@@ -1,6 +1,6 @@
 
-import { BaseHandler } from "./BaseHandler";
-import type { ToolSpec } from "./BaseHandler";
+import { BaseHandler } from "./BaseHandler.js";
+import type { ToolSpec } from "./BaseHandler.js";
 import { ADTClient, isAdtException, isLoginError, isAdtError } from 'abap-adt-api';
 import type { HttpClientResponse, RequestOptions } from 'abap-adt-api/build/AdtHTTP';
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";

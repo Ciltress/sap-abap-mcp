@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import * as handlers from '../handlers/index.js';
 import type { ToolDefinition, ToolProperty } from '../types/tools.js';
 
 /**
@@ -62,40 +61,31 @@ function labelFor(handler: string): string {
 }
 
 /**
- * Every handler's tools, read from the handler classes beside this module —
- * `src/handlers` under ts-jest, `dist/handlers` at runtime, since this file sits
- * one level below both.
+ * Every handler's tools, read from the handler classes themselves.
+ *
+ * The list comes from `../handlers/index.js` rather than from a directory scan:
+ * the build emits ESM, which has no synchronous require to load a path computed
+ * at run time. The barrel is the checkable equivalent — a handler missing from
+ * it fails toolDocs.test.ts.
  */
 export function collectToolFamilies(): ToolFamily[] {
-    const dir = path.resolve(__dirname, '..', 'handlers');
     const families: ToolFamily[] = [];
 
-    for (const entry of fs.readdirSync(dir).sort()) {
-        if (!/Handlers\.(ts|js)$/.test(entry) || entry.endsWith('.d.ts')) continue;
+    for (const key of Object.keys(handlers).sort()) {
+        const ctor = (handlers as Record<string, any>)[key];
+        if (typeof ctor !== 'function' || !ctor.prototype?.getTools) continue;
 
-        let module: Record<string, any>;
+        let tools: ToolDefinition[];
         try {
-            module = require(path.join(dir, entry));
+            // getTools() returns a literal and touches no instance state, so a
+            // bare prototype is enough — no ADT client, no session.
+            tools = Object.create(ctor.prototype).getTools();
         } catch {
             continue;
         }
+        if (!Array.isArray(tools) || !tools.length) continue;
 
-        for (const key of Object.keys(module)) {
-            const ctor = module[key];
-            if (typeof ctor !== 'function' || !ctor.prototype?.getTools) continue;
-
-            let tools: ToolDefinition[];
-            try {
-                // getTools() returns a literal and touches no instance state, so a
-                // bare prototype is enough — no ADT client, no session.
-                tools = Object.create(ctor.prototype).getTools();
-            } catch {
-                continue;
-            }
-            if (!Array.isArray(tools) || !tools.length) continue;
-
-            families.push({ handler: key, label: labelFor(key), tools });
-        }
+        families.push({ handler: key, label: labelFor(key), tools });
     }
 
     return families.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));

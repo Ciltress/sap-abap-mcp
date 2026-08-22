@@ -295,7 +295,7 @@ matter. **Anything else that needs RFC should be wired the same way.**
 
 ### Automated, no SAP system needed
 
-`npx tsc --noEmit -p tsconfig.json` is clean and `npx jest` passes. The suites that matter here:
+`npx tsc --noEmit -p tsconfig.json` is clean and `npx vitest run` passes. The suites that matter here:
 
 - **`jsonRpcHandlers.test.ts`** — this handler end to end against a fake Gateway node: signature lookup
   and its ADT fallback, request construction (upper-casing, omitted `params`, TABLES, no hand-set

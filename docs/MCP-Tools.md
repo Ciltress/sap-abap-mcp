@@ -1064,7 +1064,7 @@ below are the ones it settles — they look identical from a tool call and have 
 
 ### 9.1 Corrected in this revision
 
-Every item below was a real defect; each is fixed in code and verified (type-check, jest, and a live
+Every item below was a real defect; each is fixed in code and verified (type-check, vitest, and a live
 `tools/list` + `tools/call` round trip against a real system).
 
 | Was | Now |
@@ -1187,5 +1187,5 @@ A brand-new **handler class** additionally needs: `extends BaseHandler` (which f
 `handle`), an import and field in `index.ts`, and an entry in the `this.handlers` array — that array
 drives both `tools/list` and routing. Renaming a tool? Put the old name in `TOOL_ALIASES`.
 
-Then: `npx tsc --noEmit -p tsconfig.json`, `npx jest`, `npm run build`, and — since there is no
+Then: `npx tsc --noEmit -p tsconfig.json`, `npx vitest run`, `npm run build`, and — since there is no
 integration coverage — one manual call against a real system. Update this document in the same commit.

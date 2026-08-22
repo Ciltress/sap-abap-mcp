@@ -166,6 +166,26 @@
           "default": "on"
         },
         {
+          "name": "ABAP_MCP_TRANSPORT",
+          "description": "How this server talks to its client. stdio is the default and what a locally launched server always uses; http serves Streamable HTTP at /mcp, for one long-lived container several team members connect to, each with their own SAP OAuth token.",
+          "choices": [
+            "stdio",
+            "http"
+          ],
+          "default": "stdio"
+        },
+        {
+          "name": "ABAP_MCP_HTTP_PORT",
+          "description": "Port the Streamable HTTP endpoint listens on. Read only when ABAP_MCP_TRANSPORT=http; stdio mode opens no port at all.",
+          "format": "number",
+          "default": "3000"
+        },
+        {
+          "name": "ABAP_MCP_HTTP_HOST",
+          "description": "Address to bind in http mode. 0.0.0.0 for a container that has to be reachable from outside it; 127.0.0.1 to restrict to loopback, behind a reverse proxy on the same host.",
+          "default": "0.0.0.0"
+        },
+        {
           "name": "SAP_JSONRPC_PATH",
           "description": "ICF path of the SAP Gateway JSON-RPC service the RFC tools call, when it is published under an alias.",
           "default": "/sap/gw/jsonrpc"

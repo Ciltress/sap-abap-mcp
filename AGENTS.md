@@ -68,7 +68,7 @@ src/
   lib/toolDocs.ts          renders docs/Tool-Reference.md from the tool definitions
   lib/systemIdentity.ts    which SAP system/client this server is bound to, declared and observed
   lib/skills.ts            filesystem discovery of skills/, served as resources and by readSkill
-  __tests__/               jest suites, all offline
+  __tests__/               vitest suites, all offline
 skills/ABAP                vendored ABAP skills - ours, edit freely
 skills/Development         git submodule of mattpocock/skills - do NOT edit, changes are lost
 scripts/live-jsonrpc-check.mjs   end-to-end check against a real system (needs a Kerberos ticket)
@@ -141,7 +141,7 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
 ```bash
 npm install
 npm run build          # tsc -> dist/
-npm test               # jest, fully offline
+npm test               # vitest, fully offline
 npx tsc --noEmit       # type check only
 ```
 

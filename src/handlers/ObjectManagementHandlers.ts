@@ -1,6 +1,6 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { BaseHandler } from './BaseHandler';
-import type { ToolSpec } from './BaseHandler';
+import { BaseHandler } from './BaseHandler.js';
+import type { ToolSpec } from './BaseHandler.js';
 
 interface InactiveObject {
   "adtcore:uri": string;

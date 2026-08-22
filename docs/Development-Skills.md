@@ -95,7 +95,7 @@ Upstream's own work in progress. All user-invoked; treat them as unstable.
 
 ## Which of these fit this repository
 
-This server is a TypeScript project with an offline jest suite and a live check against SAP, so the
+This server is a TypeScript project with an offline vitest suite and a live check against SAP, so the
 process skills apply directly:
 
 - **`tdd`** — the suites here follow its shape already: behaviour-level tests against fakes, with the

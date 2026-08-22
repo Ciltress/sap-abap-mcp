@@ -24,10 +24,12 @@ die() { printf '%s\n' "$*" >&2; exit 1; }
 # .env the way index.ts does, so a mounted /app/.env cannot make the two
 # disagree about the mode. An unusable SAP_AUTH_MODE is rejected here too, in
 # the server's own wording, before anything else is attempted.
-mode=$(node -e '
+mode=$(node --input-type=module -e '
 try {
-  require("dotenv").config({ path: "/app/.env" });
-  process.stdout.write(require("/app/dist/certauth.js").resolveAuthMode());
+  const { config } = await import("dotenv");
+  config({ path: "/app/.env" });
+  const { resolveAuthMode } = await import("file:///app/dist/certauth.js");
+  process.stdout.write(resolveAuthMode());
 } catch (error) {
   console.error(error && error.message ? error.message : error);
   process.exit(1);

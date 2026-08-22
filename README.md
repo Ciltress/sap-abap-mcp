@@ -581,7 +581,7 @@ local file changes nothing in SAP. Local copies are useful for diffing, nothing 
 
 ```bash
 npm run build          # tsc -> dist/
-npm test               # jest: parser, tool catalogue, JSON-RPC handler (no SAP system needed)
+npm test               # vitest: parser, tool catalogue, JSON-RPC handler (no SAP system needed)
 npx tsc --noEmit       # type check only
 ```
 

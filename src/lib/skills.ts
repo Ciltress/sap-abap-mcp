@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Agent skills bundled under skills/, discovered from disk and served the same
@@ -39,7 +40,7 @@ export const skillUri = (skill: Pick<Skill, 'collection' | 'name'>) =>
     `${SKILL_URI_PREFIX}${skill.collection}/${skill.name}`;
 
 /** Repository root — this file sits two levels below it in both src/ and dist/. */
-const ROOT = path.resolve(__dirname, '..', '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SKILLS_ROOT = path.join(ROOT, 'skills');
 
 /**

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * The server's own documentation, exposed to clients both as MCP resources and
@@ -112,10 +113,11 @@ export function guideByUri(uri: string): GuideDefinition | undefined {
 
 /**
  * Repository root. This file compiles to dist/lib/guides.js and runs from
- * src/lib under ts-jest, and both are two levels below the root — so the same
- * relative hop works either way.
+ * src/lib under vitest, and both are two levels below the root — so the same
+ * relative hop works either way. import.meta.url rather than __dirname because
+ * the build emits ESM.
  */
-const ROOT = path.resolve(__dirname, '..', '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export class GuideNotFoundError extends Error { }
 
