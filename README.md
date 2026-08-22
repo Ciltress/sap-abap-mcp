@@ -1,4 +1,7 @@
-> **Status:** experimental. Use with caution against productive systems.
+<div align="center">
+  [![main](https://github.com/Ciltress/sap-abap-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Ciltress/sap-abap-mcp/actions/workflows/ci.yml)
+  [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Ciltress/sap-abap-mcp/blob/main/LICENSE)
+</div>
 
 # SAP ABAP MCP Server (ADT and JSON RPC)
 
