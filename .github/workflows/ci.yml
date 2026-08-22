@@ -22,7 +22,7 @@ defaults:
 
 jobs:
   test:
-    runs_on: ubuntu_latest
+    runs-on: ubuntu_latest
     steps:
       - name: Checkout
         uses: actions/checkout
@@ -43,7 +43,7 @@ jobs:
         run: npm run test:types
 
   build:
-    runs_on: ubuntu_latest
+    runs-on: ubuntu_latest
     steps:
       - name: Checkout
         uses: actions/checkout
