@@ -17,10 +17,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "tsc -p tsconfig.json",
+    "test:types": "tsc -p tsconfig.json",
     "start": "node ./dist/index.js",
     "dev": "npx @modelcontextprotocol/inspector ./dist/index.js",
-    "prepublishOnly": "npm run build",
+    "build": "npm run build",
     "docs:tools": "node scripts/generate-tool-docs.mjs"
   },
   "keywords": [
@@ -31,7 +31,7 @@
     "mcp",
     "model-context-protocol"
   ],
-  "author": "mario-andreschak",
+  "author": "Andreas Breit",
   "description": "MCP server wrapping abap-adt-api for full ABAP ADT development workflows (object CRUD, transports, locking, syntax check, activation) against SAP systems",
   "license": "MIT",
   "publishConfig": {
@@ -39,11 +39,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mario-andreschak/mcp-abap-abap-adt-api.git"
+    "url": "git+https://github.com/Ciltress/sap-abap-mcp.git"
   },
-  "homepage": "https://github.com/mario-andreschak/mcp-abap-abap-adt-api#readme",
+  "homepage": "https://github.com/Ciltress/sap-abap-mcp.git#readme",
   "bugs": {
-    "url": "https://github.com/mario-andreschak/mcp-abap-abap-adt-api/issues"
+    "url": "https://github.com/Ciltress/sap-abap-mcp.git/issues"
   },
   "engines": {
     "node": ">=24.18.0"
