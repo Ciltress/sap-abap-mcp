@@ -22,10 +22,17 @@ defaults:
 
 jobs:
   test:
-    runs-on: ubuntu_latest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # skills/Development is a submodule, and package.json ships `skills/`.
+          # Without this it is checked out empty, so CI tests a narrower skill
+          # catalogue than the package publishes.
+          submodules: recursive
 
       - name: Setup node
         uses: actions/setup-node@v7
@@ -43,10 +50,14 @@ jobs:
         run: npm run test:types
 
   build:
-    runs-on: ubuntu_latest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          submodules: recursive
 
       - name: Setup node
         uses: actions/setup-node@v7
