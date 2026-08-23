@@ -7,6 +7,11 @@ export class RefactorHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'extractMethodEvaluate',
+                    annotations: {
+                        title: 'Propose extract method',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Step 1 of 3 of an extract-method refactoring: propose a method for a source range. ' +
                         'Feed the result to extractMethodPreview, then extractMethodExecute.',
@@ -48,6 +53,11 @@ export class RefactorHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'extractMethodPreview',
+                    annotations: {
+                        title: 'Preview extract method',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Step 2 of 3: turn the proposal into a concrete refactoring with the resulting source ' +
                         'deltas. Set the method name and visibility on the proposal object first.',
@@ -70,6 +80,13 @@ export class RefactorHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'extractMethodExecute',
+                    annotations: {
+                        title: 'Apply extract method',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Step 3 of 3: apply the refactoring. This WRITES source code.',
                     inputSchema: {
                         type: 'object',

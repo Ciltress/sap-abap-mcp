@@ -7,6 +7,11 @@ export class DiscoveryHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'adtDiscovery',
+                    annotations: {
+                        title: 'ADT collections',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Every ADT collection this system exposes — the authoritative answer to whether a ' +
                         'feature exists on this release. Returns category and collection titles only, which ' +

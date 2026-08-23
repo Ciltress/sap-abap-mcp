@@ -13,6 +13,13 @@ export class AuthHandlers extends BaseHandler {
           // until the server restarts — and on a shared system that blocks other
           // developers, not just this one.
           name: 'dropSession',
+          annotations: {
+            title: 'End session and drop locks',
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: true,
+            openWorldHint: false
+          },
           description:
             'End the stateful session, releasing every lock it holds. The escape hatch for a lock ' +
             'that unLock could not release; the next tool call establishes a new session by itself. ' +

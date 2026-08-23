@@ -40,6 +40,13 @@ export class ObjectManagementHandlers extends BaseHandler {
       {
         definition: {
           name: 'activateObjects',
+          annotations: {
+            title: 'Activate objects',
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: true,
+            openWorldHint: false
+          },
           description:
             'Activate several ABAP objects at once. Feed it the records from inactiveObjects. Check BOTH ' +
             'success and messages in the result: syntax errors come back as success:false with messages.',
@@ -110,6 +117,13 @@ export class ObjectManagementHandlers extends BaseHandler {
       {
         definition: {
           name: 'activateByName',
+          annotations: {
+            title: 'Activate object by name',
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: true,
+            openWorldHint: false
+          },
           description:
             'Activate a single ABAP object by name and URL — the simple path after setObjectSource. Check ' +
             'BOTH success and messages in the result.',
@@ -152,6 +166,11 @@ export class ObjectManagementHandlers extends BaseHandler {
       {
         definition: {
           name: 'inactiveObjects',
+          annotations: {
+            title: 'Inactive objects',
+            readOnlyHint: true,
+            openWorldHint: false
+          },
           description:
             'List everything left inactive in the system for this user. Pass the object references straight ' +
             'to activateObjects to clean up.',

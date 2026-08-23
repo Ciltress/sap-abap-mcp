@@ -7,6 +7,11 @@ export class ObjectSourceHandlers extends BaseHandler {
       {
         definition: {
           name: 'getObjectSource',
+          annotations: {
+            title: 'Read source',
+            readOnlyHint: true,
+            openWorldHint: false
+          },
           description:
             'Read the source code of an ABAP object. Takes the SOURCE url (…/source/main), which you get ' +
             'from objectStructure — not the object url.',
@@ -39,6 +44,13 @@ export class ObjectSourceHandlers extends BaseHandler {
       {
         definition: {
           name: 'setObjectSource',
+          annotations: {
+            title: 'Write source',
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+            openWorldHint: false
+          },
           description:
             'Write the source code of an ABAP object. This is a FULL REPLACE — read the source first, edit ' +
             'it, and send the complete text. Requires a lock handle, and does NOT activate: call ' +

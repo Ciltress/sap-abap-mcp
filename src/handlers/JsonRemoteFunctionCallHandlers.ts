@@ -317,6 +317,11 @@ export class JsonRemoteFunctionCallHandlers extends BaseHandler {
         return [
             {
                 name: 'readAbapFunctionModule',
+                annotations: {
+                    title: 'Read function module interface',
+                    readOnlyHint: true,
+                    openWorldHint: false
+                },
                 description:
                     'Read the interface (parameters, exceptions, defaults) of an RFC-enabled ABAP function ' +
                     'module. Uses RFC_GET_FUNCTION_INTERFACE over the SAP Gateway JSON-RPC service, which is ' +
@@ -336,6 +341,13 @@ export class JsonRemoteFunctionCallHandlers extends BaseHandler {
             },
             {
                 name: 'callFunctionViaJsonRpc',
+                annotations: {
+                    title: 'Call function module',
+                    readOnlyHint: false,
+                    destructiveHint: true,
+                    idempotentHint: false,
+                    openWorldHint: true
+                },
                 description:
                     'Execute an RFC-enabled ABAP function module through the SAP Gateway JSON-RPC 2.0 service. ' +
                     'The interface is read first and the request validated against it. Parameter names are ' +
@@ -368,6 +380,13 @@ export class JsonRemoteFunctionCallHandlers extends BaseHandler {
             },
             {
                 name: 'callFunctionsViaJsonRpc',
+                annotations: {
+                    title: 'Call function modules in one LUW',
+                    readOnlyHint: false,
+                    destructiveHint: true,
+                    idempotentHint: false,
+                    openWorldHint: true
+                },
                 description:
                     'Execute several RFC-enabled ABAP function modules in ONE JSON-RPC request, in the given ' +
                     'order. All members run in the same ABAP session and therefore the same LUW, which is what ' +
@@ -414,6 +433,11 @@ export class JsonRemoteFunctionCallHandlers extends BaseHandler {
             },
             {
                 name: 'checkJsonRpcEndpoint',
+                annotations: {
+                    title: 'Probe JSON-RPC endpoint',
+                    readOnlyHint: true,
+                    openWorldHint: false
+                },
                 description:
                     'Probe the SAP Gateway JSON-RPC service with the CSRF-exempt JSONRPC.INIT method. Use this ' +
                     'to tell an inactive/misrouted SICF node apart from an authorisation or CSRF problem when ' +

@@ -86,6 +86,11 @@ export class BasisHandlers extends BaseHandler {
         return [
             {
                 name: 'listLoggedOnUsers',
+                annotations: {
+                    title: 'Logged-on users (SM04)',
+                    readOnlyHint: true,
+                    openWorldHint: false
+                },
                 description:
                     'Who is logged on to this application server right now, from TH_USER_LIST — the data ' +
                     'behind SM04. Answers "is anyone using the system", "does USER have a session", "what ' +
@@ -128,6 +133,11 @@ export class BasisHandlers extends BaseHandler {
             },
             {
                 name: 'readProfileParameters',
+                annotations: {
+                    title: 'Profile parameters (RZ11)',
+                    readOnlyHint: true,
+                    openWorldHint: false
+                },
                 description:
                     'Read SAP profile parameters (the RZ11 values) from the running instance, via ' +
                     'TH_GET_PARAMETER. Answers "how is this system configured" for anything held in a ' +
@@ -152,6 +162,11 @@ export class BasisHandlers extends BaseHandler {
             },
             {
                 name: 'checkLogonConfiguration',
+                annotations: {
+                    title: 'Logon configuration',
+                    readOnlyHint: true,
+                    openWorldHint: false
+                },
                 description:
                     'How this system lets anyone log on: whether the ICM asks for X.509 client ' +
                     'certificates and on which port, whether SNC is on, whether SAP logon tickets and ' +

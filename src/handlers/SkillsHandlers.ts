@@ -28,6 +28,11 @@ export class SkillsHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'readSkill',
+                    annotations: {
+                        title: 'Read bundled skill',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Bundled agent skills — reusable procedures for ABAP work (Clean ABAP review, RAP, CDS, ' +
                         'ABAP Unit, abapGit, ATC, OData…) and for general engineering (TDD, code review, ' +

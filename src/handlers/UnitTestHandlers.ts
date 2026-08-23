@@ -7,6 +7,13 @@ export class UnitTestHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'unitTestRun',
+                    annotations: {
+                        title: 'Run ABAP Unit tests',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: true
+                    },
                     description:
                         'Run ABAP Unit tests for a class, program or package. Returns UnitTestClass[] whose ' +
                         'testmethods[] carry the alerts (failures). Pass one of those class objects to ' +
@@ -44,6 +51,11 @@ export class UnitTestHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'unitTestEvaluation',
+                    annotations: {
+                        title: 'Test class detail',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Method-level detail for one test class. Takes the UnitTestClass OBJECT returned by ' +
                         'unitTestRun — not a class name.',
@@ -78,6 +90,11 @@ export class UnitTestHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'unitTestOccurrenceMarkers',
+                    annotations: {
+                        title: 'Test method markers',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Map test methods onto source ranges — the data behind the test markers in the ADT gutter.',
                     inputSchema: {
@@ -103,6 +120,13 @@ export class UnitTestHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'createTestInclude',
+                    annotations: {
+                        title: 'Create test include',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description:
                         'Create the test include (local test classes) of a class. Requires an active lock on the ' +
                         'class: call lock first and unLock afterwards.',

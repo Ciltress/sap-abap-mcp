@@ -313,6 +313,68 @@ let consoleError: MockInstance;
 beforeAll(() => { consoleError = vi.spyOn(console, 'error').mockImplementation(() => { }); });
 afterAll(() => { consoleError.mockRestore(); });
 
+/**
+ * The annotations every tool owes a client, checked uniformly for the same
+ * reason as the envelope: they are a per-tool declaration, so the failure mode
+ * is not a wrong one but a missing one. A new tool with no annotations falls
+ * back to the specification's defaults — not read-only, destructive,
+ * open-world — which makes it look more dangerous than `deleteObject` and
+ * pushes a client to prompt for it forever.
+ */
+describe('every tool declares its annotations', () => {
+    it.each(catalogue.map(c => [c.handler, c.tool.name, c.tool] as const))(
+        '%s.%s says what it does to the system',
+        (_handlerName, _toolName, tool) => {
+            const annotations = tool.annotations;
+            expect(annotations).toBeDefined();
+
+            expect(typeof annotations!.title).toBe('string');
+            expect(annotations!.title!.length).toBeGreaterThan(2);
+            // A title that only restates the name buys a UI nothing.
+            expect(annotations!.title).not.toBe(tool.name);
+
+            expect(typeof annotations!.readOnlyHint).toBe('boolean');
+            expect(typeof annotations!.openWorldHint).toBe('boolean');
+
+            if (annotations!.readOnlyHint) {
+                // Both are defined by the specification as meaningful only when
+                // the tool writes. Stating them here would read as a claim.
+                expect(annotations!.destructiveHint).toBeUndefined();
+                expect(annotations!.idempotentHint).toBeUndefined();
+            } else {
+                expect(typeof annotations!.destructiveHint).toBe('boolean');
+                expect(typeof annotations!.idempotentHint).toBe('boolean');
+            }
+        }
+    );
+
+    it('marks the tools that write, and only those', () => {
+        const byName = new Map(catalogue.map(c => [c.tool.name, c.tool]));
+        const writes = (name: string) => byName.get(name)?.annotations?.readOnlyHint === false;
+
+        // A sample from each end, so the suite fails loudly if a whole family is
+        // annotated by pattern-matching on its name rather than on what it does.
+        for (const name of ['deleteObject', 'setObjectSource', 'transportRelease', 'runClass', 'lock'])
+            expect(`${name} writes: ${writes(name)}`).toBe(`${name} writes: true`);
+
+        // prettyPrinter formats and returns; fixEdits computes deltas and returns
+        // them; runQuery is rejected by SAP if it is not a SELECT. None persist.
+        for (const name of ['prettyPrinter', 'fixEdits', 'runQuery', 'getObjectSource', 'syntaxCheckCode'])
+            expect(`${name} writes: ${writes(name)}`).toBe(`${name} writes: false`);
+    });
+
+    it('flags the tools that reach past this SAP system', () => {
+        const byName = new Map(catalogue.map(c => [c.tool.name, c.tool]));
+        const open = (name: string) => byName.get(name)?.annotations?.openWorldHint === true;
+
+        for (const name of ['pushRepo', 'gitPullRepo', 'transportRelease', 'publishServiceBinding'])
+            expect(`${name} open: ${open(name)}`).toBe(`${name} open: true`);
+
+        for (const name of ['searchObject', 'readShortDumps', 'createTransport'])
+            expect(`${name} open: ${open(name)}`).toBe(`${name} open: false`);
+    });
+});
+
 describe('every tool honours the response contract', () => {
     it.each(catalogue.map(c => [c.handler, c.tool.name, c.tool] as const))(
         '%s.%s returns one single-level MCP envelope',

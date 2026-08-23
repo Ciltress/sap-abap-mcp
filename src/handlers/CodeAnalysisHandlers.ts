@@ -8,6 +8,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'syntaxCheckCode',
+                    annotations: {
+                        title: 'Syntax check source',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Run an ABAP syntax check against source code you supply (typically an unsaved buffer). ' +
                         'Returns an array of findings; an empty array means the code is clean.',
@@ -69,6 +74,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'syntaxCheckCdsUrl',
+                    annotations: {
+                        title: 'Syntax check stored CDS',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Run a syntax check on a stored CDS/DDL source by URL (no source payload — the server ' +
                         'checks what is saved).',
@@ -89,6 +99,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'codeCompletion',
+                    annotations: {
+                        title: 'Code completion',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Code completion proposals at a position. Returns entries with PREFIXLENGTH (how many ' +
                         'characters the proposal replaces) and IDENTIFIER.',
@@ -116,6 +131,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'findDefinition',
+                    annotations: {
+                        title: 'Go to definition',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Go to definition of the symbol at a position. startCol/endCol must span the whole ' +
                         'identifier, not a single caret position.',
@@ -152,6 +172,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'usageReferences',
+                    annotations: {
+                        title: 'Find references',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Find all references. Without line/column it reports usages of the whole object; with ' +
                         'them, of the symbol at that position.',
@@ -173,6 +198,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'syntaxCheckTypes',
+                    annotations: {
+                        title: 'Supported check types',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'List the syntax checker types this system supports, as checkType -> supported types.',
                     inputSchema: {
                         type: 'object',
@@ -188,6 +218,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'codeCompletionFull',
+                    annotations: {
+                        title: 'Expand completion pattern',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Expand a pattern proposal (e.g. a full METHOD ... ENDMETHOD skeleton) into source text. ' +
                         'patternKey comes from a previous codeCompletion proposal.',
@@ -217,6 +252,13 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'runClass',
+                    annotations: {
+                        title: 'Run ABAP class',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: true
+                    },
                     description:
                         'Execute a class that implements IF_OO_ADT_CLASSRUN and return its console output. ' +
                         'This RUNS CODE on the SAP system.',
@@ -234,6 +276,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'codeCompletionElement',
+                    annotations: {
+                        title: 'Element information',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Detailed information (documentation, signature, components) about the element at a ' +
                         'position. Fails on older systems that answer with HTML instead of XML.',
@@ -261,6 +308,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'usageReferenceSnippets',
+                    annotations: {
+                        title: 'Reference snippets',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Fetch the code snippets around usage references. Pass the UsageReference objects returned ' +
                         'by usageReferences unchanged.',
@@ -284,6 +336,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'fixProposals',
+                    annotations: {
+                        title: 'Quick-fix proposals',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Quick-fix candidates at a position. Feed one of them to fixEdits.',
                     inputSchema: {
                         type: 'object',
@@ -304,6 +361,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'fixEdits',
+                    annotations: {
+                        title: 'Quick-fix edits',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Turn a fix proposal into concrete source deltas. Returns the edits — it does NOT write ' +
                         'them; apply them yourself and use setObjectSource.',
@@ -327,6 +389,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'mapSourceFragments',
+                    annotations: {
+                        title: 'Locate source fragment',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Find where one method, form or other sub-object starts and ends in its source, ' +
                         'without parsing the code yourself. Use it to read or change a single method of a ' +
@@ -349,6 +416,11 @@ export class CodeAnalysisHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'abapDocumentation',
+                    annotations: {
+                        title: 'ABAP keyword documentation',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'ABAP Keyword Documentation for the token at a position. Returns an HTML string.',
                     inputSchema: {

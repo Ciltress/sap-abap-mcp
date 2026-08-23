@@ -7,6 +7,11 @@ export class RevisionHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'revisions',
+                    annotations: {
+                        title: 'Version history',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Version history of an object. Each revision carries a uri you can pass to getObjectSource to diff versions.',
                     inputSchema: {
                         type: 'object',

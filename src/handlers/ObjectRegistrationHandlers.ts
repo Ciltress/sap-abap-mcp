@@ -7,6 +7,11 @@ export class ObjectRegistrationHandlers extends BaseHandler {
       {
         definition: {
           name: 'objectRegistrationInfo',
+          annotations: {
+            title: 'Namespace registration info',
+            readOnlyHint: true,
+            openWorldHint: false
+          },
           description: 'Namespace / SSCR registration information for an ABAP object.',
           inputSchema: {
             type: 'object',
@@ -24,6 +29,11 @@ export class ObjectRegistrationHandlers extends BaseHandler {
       {
         definition: {
           name: 'validateNewObject',
+          annotations: {
+            title: 'Validate new object',
+            readOnlyHint: true,
+            openWorldHint: false
+          },
           description:
             'Check a new object name, package and type before creating it — catches name clashes and ' +
             'missing authorisations.',
@@ -54,6 +64,13 @@ export class ObjectRegistrationHandlers extends BaseHandler {
       {
         definition: {
           name: 'createObject',
+          annotations: {
+            title: 'Create empty object',
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: false,
+            openWorldHint: false
+          },
           description:
             'Create a new, EMPTY ABAP object. Fill it afterwards with lock -> setObjectSource -> ' +
             'activateByName -> unLock.',

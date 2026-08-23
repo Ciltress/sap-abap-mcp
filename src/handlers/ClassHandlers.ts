@@ -10,6 +10,11 @@ export class ClassHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'classIncludes',
+                    annotations: {
+                        title: 'Class includes',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'List the source URLs of the includes of an ABAP class (definitions, implementations, ' +
                         'macros, testclasses, main). Accepts a class name, an ADT class URL, or the structure ' +
@@ -47,6 +52,11 @@ export class ClassHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'classComponents',
+                    annotations: {
+                        title: 'Class components',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'List the components (methods, attributes, types, events) of an ABAP class, with their ' +
                         'ADT links. Takes the class OBJECT url, not the source url.',

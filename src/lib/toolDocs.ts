@@ -109,6 +109,29 @@ function describeProperty(name: string, property: ToolProperty, required: boolea
     return `\`${name}\`${required ? '**\\***' : ''} ${bits.join(', ')}`;
 }
 
+/**
+ * The tool's annotations in one clause: what a client is being told before it
+ * decides whether to ask a human.
+ *
+ * Only the flags that are *set* are printed. A reader wants to see which tools
+ * write and which of those bite; a row of "not destructive, not idempotent,
+ * not open-world" on 81 read-only tools would bury exactly that.
+ */
+function describeAnnotations(tool: ToolDefinition): string | undefined {
+    const a = tool.annotations;
+    if (!a) return undefined;
+
+    const bits = a.readOnlyHint
+        ? ['read-only']
+        : ['writes',
+           ...(a.destructiveHint ? ['destructive'] : []),
+           ...(a.idempotentHint ? ['idempotent'] : [])];
+
+    if (a.openWorldHint) bits.push('reaches outside this SAP system');
+
+    return `_${bits.join(' · ')}_`;
+}
+
 function renderTool(tool: ToolDefinition): string {
     const required = new Set(tool.inputSchema.required ?? []);
     const properties = Object.entries(tool.inputSchema.properties ?? {});
@@ -116,7 +139,15 @@ function renderTool(tool: ToolDefinition): string {
         ? properties.map(([name, p]) => describeProperty(name, p, required.has(name))).join(' · ')
         : '_no arguments_';
 
-    return [`**\`${tool.name}\`** — ${cell(tool.description)}`, '', args, ''].join('\n');
+    const hints = describeAnnotations(tool);
+
+    return [
+        `**\`${tool.name}\`** — ${cell(tool.description)}`,
+        '',
+        ...(hints ? [hints, ''] : []),
+        args,
+        ''
+    ].join('\n');
 }
 
 export const TOOL_REFERENCE_FILE = 'docs/Tool-Reference.md';
@@ -147,6 +178,13 @@ export function renderToolReference(families: ToolFamily[] = collectToolFamilies
         '',
         'An argument marked **\\*** is required. Argument *descriptions* are not repeated here: they',
         'reach you in the `inputSchema` of every tool you can call.',
+        '',
+        'The italic line under each tool is its MCP **annotations**, sent to clients in `tools/list`:',
+        'whether it only reads, whether it *writes*, whether the write is *destructive* (it overwrites',
+        'or removes something that was there) or *idempotent* (repeating it changes nothing further),',
+        'and whether it reaches past this one SAP system — an external Git remote, a released',
+        'transport, a published OData service, or ABAP that can do any of those itself. They are hints',
+        'for deciding what needs a human, not a permission system: nothing here is enforced.',
         '',
         '## Families',
         '',

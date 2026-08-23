@@ -7,6 +7,11 @@ export class NodeHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'nodeContents',
+                    annotations: {
+                        title: 'Browse repository tree',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Browse the ABAP repository tree, e.g. list a package with {parent_type:"DEVC/K", parent_name:"ZPKG"}.',
                     inputSchema: {
                         type: 'object',
@@ -57,6 +62,11 @@ export class NodeHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'mainPrograms',
+                    annotations: {
+                        title: 'Main programs of an include',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Which main programs an include belongs to. You need one of these as mainProgram for syntaxCheckCode and findDefinition on includes.',
                     inputSchema: {
                         type: 'object',

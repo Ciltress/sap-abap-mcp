@@ -131,12 +131,49 @@ export interface ToolDefinition {
     properties: Record<string, ToolProperty>;
     required?: string[];   // the only optionality marker — anything not listed is optional
   };
+  narrowingHint?: string;  // what "narrow it" means here, used when an answer exceeds the budget
+  needsFeature?: string;   // the GatedFeature this tool cannot work without, e.g. 'abapgit'
+  annotations?: ToolAnnotations;
+}
+
+export interface ToolAnnotations {
+  title?: string;            // human-readable name, for UIs that show one instead of `name`
+  readOnlyHint?: boolean;    // the call leaves the system exactly as it found it
+  destructiveHint?: boolean; // it overwrites or removes something that existed
+  idempotentHint?: boolean;  // repeating it leaves the same state
+  openWorldHint?: boolean;   // it reaches past the SAP system this server is bound to
 }
 ```
 
 There is no `optional: true` flag: it was never JSON Schema, and a test now fails if one reappears.
 Nested `properties`/`items` mean a structured argument can describe its own shape, which is what the
 `flags`, `range`, `config` and `settings` parameters do.
+
+### 2.1.1 Annotations — what a tool does to the system
+
+`annotations` goes to the client unchanged in `tools/list`. It is how a client decides what to
+auto-approve and what to put in front of a human, and this catalogue needs it: **82 of the 129 tools
+only read**, and without the hints a client has to treat `searchObject` exactly like `deleteObject`.
+
+They are **hints, not a permission system.** Nothing here is enforced — the specification is explicit
+that a client must not trust annotations from a server it does not trust. What they are worth on a
+server you *do* trust is fewer prompts on the 82, and a loud one on the rest.
+
+Read them with the conventions this server applies uniformly:
+
+| Flag | True when |
+| --- | --- |
+| `readOnlyHint` | The call changes nothing in SAP. A check that sends source but persists nothing — `syntaxCheckCode`, `prettyPrinter`, `fixEdits`, `renamePreview` — is read-only. Anything that **executes ABAP** is not: `runClass`, `unitTestRun`, `callFunctionViaJsonRpc` and `debuggerStep` hand control to code that decides for itself. |
+| `destructiveHint` | The call overwrites or removes something that was already there: source (`setObjectSource`), an object (`deleteObject`), a lock (`dropSession`), a transport (`transportDelete`), a live service (`unPublishServiceBinding`), a variable in a running debuggee. Creating something new is **not** destructive — `createObject`, `createTransport` and `createTestInclude` are all `false`. |
+| `idempotentHint` | Repeating the call really does leave the same state: `unLock`, `deleteObject`, `activateByName`, `debuggerSetBreakpoints`. **A source write never qualifies**, even with identical text — it adds a version to the object's history every time. |
+| `openWorldHint` | The call reaches past this one SAP system: an external Git remote (`gitPullRepo`, `pushRepo`), a transport released towards the next system in the landscape (`transportRelease`), an OData service published to its consumers (`publishServiceBinding`), or ABAP that can do any of those itself. `false` everywhere else, because a single SAP system's repository is a closed domain. |
+
+Each tool declares its own, next to its `name`. That is deliberate and matches `narrowingHint` and
+`needsFeature`: a table keyed by tool name goes stale silently on a rename, and here the failure
+would be a destructive tool quietly falling back to a client's defaults. `handlerContract.test.ts`
+checks every tool has them, and that a read-only tool does **not** state `destructiveHint` or
+`idempotentHint` — the specification defines both as meaningful only when the tool writes.
+[`docs/Tool-Reference.md`](./Tool-Reference.md) prints them under each tool.
 
 ### 2.2 The execution layer — `BaseHandler`
 
@@ -1110,7 +1147,7 @@ Every item below was a real defect; each is fixed in code and verified (type-che
 
 | Suite | Covers |
 | --- | --- |
-| `handlerContract.test.ts` | **Every tool in the catalogue**, four properties each: returns one single-level MCP envelope; reports a backend failure as an `McpError` rather than `status:"success"`; delegates to the ADT client; survives `{}` and `undefined` arguments without a raw `TypeError`. Arguments are generated from each tool's own `inputSchema`, so a new tool is covered the moment it is listed. Plus spot checks pinning argument order for the API calls most likely to be broken by a refactor. |
+| `handlerContract.test.ts` | **Every tool in the catalogue**, five properties each: returns one single-level MCP envelope; reports a backend failure as an `McpError` rather than `status:"success"`; delegates to the ADT client; survives `{}` and `undefined` arguments without a raw `TypeError`; declares MCP annotations, with `destructiveHint`/`idempotentHint` left unstated on a read-only tool. Arguments are generated from each tool's own `inputSchema`, so a new tool is covered the moment it is listed. Plus spot checks pinning argument order for the API calls most likely to be broken by a refactor. |
 | `toolDefinitions.test.ts` | The catalogue itself: unique names, routability, descriptions, valid `required`, no `optional` marker, structured argument types. |
 | `jsonRpcHandlers.test.ts` | The JSON-RPC handler end to end against a fake SAP Gateway node — see [`JSON-RPC.md` §8](./JSON-RPC.md). |
 | `objectAccess.test.ts` | `readAbapObject` resolution, ambiguity and no-source handling; `describeAbapTable` field condensing. |

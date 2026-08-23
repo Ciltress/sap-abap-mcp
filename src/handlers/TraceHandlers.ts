@@ -7,6 +7,11 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesList',
+                    annotations: {
+                        title: 'Trace results',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Trace results available for a user. Their ids feed the hit list, DB access and statement tools.',
                     inputSchema: {
                         type: 'object',
@@ -24,6 +29,11 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesListRequests',
+                    annotations: {
+                        title: 'Scheduled trace requests',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Scheduled trace requests (configurations) that have not produced a result yet.',
                     inputSchema: {
                         type: 'object',
@@ -41,6 +51,11 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesHitList',
+                    annotations: {
+                        title: 'Trace hit list',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Hit list of a trace: which statements consumed the runtime.',
                     inputSchema: {
                         type: 'object',
@@ -65,6 +80,11 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesDbAccess',
+                    annotations: {
+                        title: 'Trace database accesses',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Database accesses recorded in a trace, with their times and row counts.',
                     inputSchema: {
                         type: 'object',
@@ -89,6 +109,11 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesStatements',
+                    annotations: {
+                        title: 'Trace statements',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Statement-level detail of a trace, optionally drilled down automatically past a time threshold.',
                     inputSchema: {
                         type: 'object',
@@ -119,6 +144,13 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesSetParameters',
+                    annotations: {
+                        title: 'Define trace parameters',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Define what a trace records and its size/time limits. Returns the parametersId used by tracesCreateConfiguration.',
                     inputSchema: {
                         type: 'object',
@@ -154,6 +186,13 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesCreateConfiguration',
+                    annotations: {
+                        title: 'Schedule a trace',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Schedule a trace for a user, process type and object type.',
                     inputSchema: {
                         type: 'object',
@@ -191,6 +230,13 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesDeleteConfiguration',
+                    annotations: {
+                        title: 'Delete trace configuration',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Delete a scheduled trace configuration, so it stops producing new traces.',
                     inputSchema: {
                         type: 'object',
@@ -211,6 +257,13 @@ export class TraceHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tracesDelete',
+                    annotations: {
+                        title: 'Delete trace result',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Delete a trace result and the runtime data behind it.',
                     inputSchema: {
                         type: 'object',

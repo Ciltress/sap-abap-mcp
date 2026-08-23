@@ -7,6 +7,13 @@ export class ObjectDeletionHandlers extends BaseHandler {
       {
         definition: {
           name: 'deleteObject',
+          annotations: {
+            title: 'Delete object',
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: true,
+            openWorldHint: false
+          },
           description: 'Delete an ABAP object. IRREVERSIBLE - requires an active lock handle, and a transport for non-local objects.',
           inputSchema: {
             type: 'object',

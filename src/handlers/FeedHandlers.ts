@@ -7,6 +7,11 @@ export class FeedHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'listFeeds',
+                    annotations: {
+                        title: 'Available ADT feeds',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'ADT feeds available on this system - short dumps, ATC results and whatever else ' +
                         'this release publishes - with the queries each one accepts. Call it to find out ' +
@@ -22,6 +27,11 @@ export class FeedHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'readShortDumps',
+                    annotations: {
+                        title: 'Short dumps (ST22)',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Recent ABAP short dumps - the ST22 list. The fastest way to find out why ' +
                         'something you just ran failed, and the first thing to check after a runtime ' +

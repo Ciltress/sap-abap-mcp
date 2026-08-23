@@ -7,6 +7,11 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'gitRepos',
+                    annotations: {
+                        title: 'Linked abapGit repositories',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'List the abapGit repositories linked in this system. Start here: the GitRepo objects returned are what the other tools need, and GitRepo.key is the repoId.',
                     inputSchema: {
                         type: 'object',
@@ -20,6 +25,11 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'gitExternalRepoInfo',
+                    annotations: {
+                        title: 'External repository info',
+                        readOnlyHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Retrieves information about an external Git repository.',
                     inputSchema: {
                         type: 'object',
@@ -49,6 +59,13 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'gitCreateRepo',
+                    annotations: {
+                        title: 'Link package to repository',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: true
+                    },
                     description: 'Link an ABAP package to a Git repository and pull it for the first time.',
                     inputSchema: {
                         type: 'object',
@@ -97,6 +114,13 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'gitPullRepo',
+                    annotations: {
+                        title: 'Pull repository (overwrites)',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: true
+                    },
                     description: 'Pull a repository into the ABAP system. OVERWRITES the ABAP objects of the linked package with the repository content.',
                     inputSchema: {
                         type: 'object',
@@ -140,6 +164,13 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'gitUnlinkRepo',
+                    annotations: {
+                        title: 'Unlink repository',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Remove the link between a package and its repository. The ABAP objects stay.',
                     inputSchema: {
                         type: 'object',
@@ -159,6 +190,11 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'stageRepo',
+                    annotations: {
+                        title: 'Compute staging area',
+                        readOnlyHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Compute the staging area for a repository. Returns GitStaging with staged/unstaged/ignored; move entries and set comment/author/committer, then pass it to pushRepo.',
                     inputSchema: {
                         type: 'object',
@@ -188,6 +224,13 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'pushRepo',
+                    annotations: {
+                        title: 'Push to remote',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: true
+                    },
                     description: 'Push staged changes to the remote. This PUBLISHES code to an external repository.',
                     inputSchema: {
                         type: 'object',
@@ -221,6 +264,11 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'checkRepo',
+                    annotations: {
+                        title: 'Check repository',
+                        readOnlyHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Consistency check of a linked repository - run it before a pull or push.',
                     inputSchema: {
                         type: 'object',
@@ -250,6 +298,11 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'remoteRepoInfo',
+                    annotations: {
+                        title: 'Remote info (deprecated)',
+                        readOnlyHint: true,
+                        openWorldHint: true
+                    },
                     description:
                         'DEPRECATED (duplicate of gitExternalRepoInfo, which takes a URL instead of a repo ' +
                         'object) — retrieves information about the remote of a linked repository.',
@@ -281,6 +334,13 @@ export class GitHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'switchRepoBranch',
+                    annotations: {
+                        title: 'Switch branch',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Switches the branch of a Git repository.',
                     inputSchema: {
                         type: 'object',

@@ -7,6 +7,11 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerListeners',
+                    annotations: {
+                        title: 'Check debug listener',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Check whether a debug listener is already active. Returns undefined when nobody is listening.',
                     inputSchema: {
                         type: 'object',
@@ -50,6 +55,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerListen',
+                    annotations: {
+                        title: 'Wait for breakpoint (blocks)',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Wait for a breakpoint to be hit. WARNING: this call BLOCKS — it only returns when a breakpoint is reached, a timeout expires, or another client stops the listener, which can take hours. Set breakpoints first, and use debuggerDeleteListener to break out.',
                     inputSchema: {
                         type: 'object',
@@ -98,6 +110,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerDeleteListener',
+                    annotations: {
+                        title: 'Stop debug listener',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Stop a debug listener - yours or another client\'s. This is how you break out of a blocked debuggerListen.',
                     inputSchema: {
                         type: 'object',
@@ -136,6 +155,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerSetBreakpoints',
+                    annotations: {
+                        title: 'Set breakpoints',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Set debugger breakpoints. Returns one entry per breakpoint, which may be a DebugBreakpointError instead of a DebugBreakpoint — check each one.',
                     inputSchema: {
                         type: 'object',
@@ -211,6 +237,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerDeleteBreakpoints',
+                    annotations: {
+                        title: 'Delete breakpoint',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Delete one breakpoint. Pass the DebugBreakpoint object returned by debuggerSetBreakpoints.',
                     inputSchema: {
                         type: 'object',
@@ -260,6 +293,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerAttach',
+                    annotations: {
+                        title: 'Attach to debuggee',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Attach to a debuggee reported by debuggerListen. Returns the reached breakpoint and the initial stack.',
                     inputSchema: {
                         type: 'object',
@@ -298,6 +338,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerSaveSettings',
+                    annotations: {
+                        title: 'Save debugger settings',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Persist the debugger settings (system debugging, update debugging, exception objects, ...).',
                     inputSchema: {
                         type: 'object',
@@ -326,6 +373,11 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerStackTrace',
+                    annotations: {
+                        title: 'Debuggee call stack',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Call stack of the attached debuggee. semanticURIs:true returns ADT URIs you can feed to getObjectSource.',
                     inputSchema: {
                         type: 'object',
@@ -345,6 +397,11 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerVariables',
+                    annotations: {
+                        title: 'Read debuggee variables',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Read variables of the current stack frame by name. Use ["SY"] for the system fields.',
                     inputSchema: {
                         type: 'object',
@@ -363,6 +420,11 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerChildVariables',
+                    annotations: {
+                        title: 'Expand debuggee variable',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Expand a structure, internal table or object one level deeper.',
                     inputSchema: {
                         type: 'object',
@@ -380,6 +442,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerStep',
+                    annotations: {
+                        title: 'Step debuggee',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: true
+                    },
                     description: 'Step the attached debuggee. stepRunToLine and stepJumpToLine need url; terminateDebuggee ends the session.',
                     inputSchema: {
                         type: 'object',
@@ -405,6 +474,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerGoToStack',
+                    annotations: {
+                        title: 'Switch stack frame',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Switch the active stack frame, so variable reads apply to that frame.',
                     inputSchema: {
                         type: 'object',
@@ -425,6 +501,13 @@ export class DebugHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'debuggerSetVariableValue',
+                    annotations: {
+                        title: 'Overwrite debuggee variable',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Overwrite a variable in the running debuggee.',
                     inputSchema: {
                         type: 'object',

@@ -7,6 +7,11 @@ export class RenameHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'renameEvaluate',
+                    annotations: {
+                        title: 'Propose rename',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Step 1 of 3 of a rename refactoring: propose a rename for the symbol at a position. ' +
                         'Feed the result to renamePreview, then renameExecute.',
@@ -46,6 +51,11 @@ export class RenameHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'renamePreview',
+                    annotations: {
+                        title: 'Preview rename',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Step 2 of 3: compute every affected source change. Set the new name on the proposal ' +
                         'object before calling, and show the result to a human before executing.',
@@ -73,6 +83,13 @@ export class RenameHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'renameExecute',
+                    annotations: {
+                        title: 'Apply rename',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description:
                         'Step 3 of 3: apply the rename. This WRITES source code across every affected object.',
                     inputSchema: {

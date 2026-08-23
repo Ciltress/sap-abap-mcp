@@ -21,6 +21,11 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'objectStructure',
+                    annotations: {
+                        title: 'Object metadata and links',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Metadata and links of an ABAP object. The link with type "text/plain" is the SOURCE url ' +
                         '(relative to objectUrl) that getObjectSource and the code-intelligence tools need.',
@@ -49,6 +54,11 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'searchObject',
+                    annotations: {
+                        title: 'Search objects',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Find ABAP objects by name or name pattern — the general search, for when you do not ' +
                         'know an exact name. A trailing * is added when you supply no wildcard, and the query ' +
@@ -86,6 +96,11 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'readAbapObject',
+                    annotations: {
+                        title: 'Read object by name',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Read an ABAP object by NAME — no URL needed. Resolves the name, picks the right object ' +
                         'when several types share it, and returns the metadata together with the source in one ' +
@@ -127,6 +142,11 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'searchPackages',
+                    annotations: {
+                        title: 'Search packages and contents',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Find packages by name pattern and list what is in them, in one call. Takes several ' +
                         'patterns at once (e.g. ["ZPP_*","Z_PP*"]), normalises each one the way the repository ' +
@@ -172,6 +192,13 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'editAbapSource',
+                    annotations: {
+                        title: 'Edit and activate source',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description:
                         'Change the source of an ABAP object by NAME and activate it, in one call. Performs the ' +
                         'whole cycle — lock, write, activate, unlock — and releases the lock on every path, ' +
@@ -241,6 +268,11 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'findObjectPath',
+                    annotations: {
+                        title: 'Package breadcrumb',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Package hierarchy (breadcrumb) leading to an object - where it lives in the repository tree.',
                     inputSchema: {
                         type: 'object',
@@ -262,6 +294,11 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'objectTypes',
+                    annotations: {
+                        title: 'Known object types',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'All object types this system knows, with their ADT URI templates. Useful for mapping a ' +
                         'type id to a URL shape.',
@@ -279,6 +316,13 @@ export class ObjectHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'reentranceTicket',
+                    annotations: {
+                        title: 'Issue SSO ticket',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description:
                         'Short-lived SSO ticket for handing the current session to a browser or SAP GUI.',
                     inputSchema: {

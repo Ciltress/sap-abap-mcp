@@ -7,6 +7,13 @@ export class ServiceBindingHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'publishServiceBinding',
+                    annotations: {
+                        title: 'Publish OData service',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Publish a service binding - this EXPOSES an OData service. Check the returned severity: an HTTP success does not mean it published.',
                     inputSchema: {
                         type: 'object',
@@ -32,6 +39,13 @@ export class ServiceBindingHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'unPublishServiceBinding',
+                    annotations: {
+                        title: 'Unpublish OData service',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Take a published OData service offline. Check the returned severity.',
                     inputSchema: {
                         type: 'object',
@@ -57,6 +71,11 @@ export class ServiceBindingHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'bindingDetails',
+                    annotations: {
+                        title: 'Service binding details',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Service URLs and metadata of a binding. Use index to pick one of several services in it.',
                     inputSchema: {
                         type: 'object',

@@ -30,6 +30,11 @@ export class DocsHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'readServerGuide',
+                    annotations: {
+                        title: 'Read server guide',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         "This server's own documentation. Call with no arguments for an index of the available " +
                         'guides and their sections, then request one section by number or title. Use it when ' +

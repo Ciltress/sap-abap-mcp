@@ -874,6 +874,11 @@ export class AbapAdtServer extends Server {
   private healthcheckTool(): ToolDefinition {
     return {
       name: 'healthcheck',
+      annotations: {
+        title: 'Health and system identity',
+        readOnlyHint: true,
+        openWorldHint: false
+      },
       description:
         'Which SAP system and client this server is bound to, plus liveness, the ADT session state ' +
         'and per-handler call metrics. Call it to find out whether this is the right server for a ' +

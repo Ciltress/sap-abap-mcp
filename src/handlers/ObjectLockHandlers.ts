@@ -7,6 +7,13 @@ export class ObjectLockHandlers extends BaseHandler {
       {
         definition: {
           name: 'lock',
+          annotations: {
+            title: 'Lock object',
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false
+          },
           description:
             'Lock an ABAP object for editing and return the lock handle. The lock lives in the stateful ' +
             'session — dropSession or a server restart invalidates it. Always unLock when done. ' +
@@ -41,6 +48,13 @@ export class ObjectLockHandlers extends BaseHandler {
       {
         definition: {
           name: 'unLock',
+          annotations: {
+            title: 'Release lock',
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false
+          },
           description: 'Release a lock. Call this even when the operation in between failed.',
           inputSchema: {
             type: 'object',

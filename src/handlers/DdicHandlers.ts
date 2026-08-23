@@ -36,6 +36,11 @@ export class DdicHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'describeAbapTable',
+                    annotations: {
+                        title: 'Describe table fields',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Field list of a database table, structure or view: names, DDIC types, lengths, KEY ' +
                         'flags, data elements, domains and check tables, condensed into a readable summary. ' +
@@ -65,6 +70,11 @@ export class DdicHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'annotationDefinitions',
+                    annotations: {
+                        title: 'CDS annotation vocabulary',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'The full CDS annotation vocabulary of this system, as a string. Large.',
                     inputSchema: {
                         type: 'object',
@@ -77,6 +87,11 @@ export class DdicHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'ddicElement',
+                    annotations: {
+                        title: 'DDIC element model',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Semantic model (fields, types, annotations) of a table, view or CDS entity.',
                     inputSchema: {
                         type: 'object',
@@ -114,6 +129,11 @@ export class DdicHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'ddicRepositoryAccess',
+                    annotations: {
+                        title: 'DDIC where-used',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Where-used / lineage information at data dictionary level.',
                     inputSchema: {
                         type: 'object',
@@ -132,6 +152,11 @@ export class DdicHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'packageSearchHelp',
+                    annotations: {
+                        title: 'Package value help',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Value help for package attributes (application/software components, transport layers, translation relevance).',
                     inputSchema: {
                         type: 'object',

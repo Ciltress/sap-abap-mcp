@@ -7,6 +7,11 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'atcCustomizing',
+                    annotations: {
+                        title: 'ATC settings',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'System ATC settings, including the default check variant. Start an ATC workflow here.',
                     inputSchema: {
                         type: 'object',
@@ -19,6 +24,11 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'atcCheckVariant',
+                    annotations: {
+                        title: 'Resolve ATC check variant',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Resolve and validate an ATC check variant name before starting a run.',
                     inputSchema: {
                         type: 'object',
@@ -37,6 +47,13 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'createAtcRun',
+                    annotations: {
+                        title: 'Start ATC run',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Start an ATC run over an object or package. Returns the run result id and timestamp needed by atcWorklists.',
                     inputSchema: {
                         type: 'object',
@@ -65,6 +82,11 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'atcWorklists',
+                    annotations: {
+                        title: 'ATC findings',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Findings of an ATC run: objects[].findings[] with priority, check title and location.',
                     inputSchema: {
                         type: 'object',
@@ -102,6 +124,11 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'atcUsers',
+                    annotations: {
+                        title: 'ATC contacts',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Users available as ATC contacts or exemption approvers.',
                     inputSchema: {
                         type: 'object',
@@ -114,6 +141,11 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'atcExemptProposal',
+                    annotations: {
+                        title: 'Propose ATC exemption',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Start an exemption for a finding: returns the proposal object to fill in and submit.',
                     inputSchema: {
                         type: 'object',
@@ -132,6 +164,13 @@ export class AtcHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'atcRequestExemption',
+                    annotations: {
+                        title: 'Submit ATC exemption',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Submit an exemption request. Pass the AtcProposal OBJECT from atcExemptProposal, with your justification filled in.',
                     inputSchema: {
                         type: 'object',

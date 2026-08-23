@@ -7,6 +7,11 @@ export class QueryHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'tableContents',
+                    annotations: {
+                        title: 'Read table contents',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Read the contents of a DDIC table or view (ADT Data Preview). Read-only. Note that the ' +
                         'service usually returns one row more than requested.',
@@ -47,6 +52,11 @@ export class QueryHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'runQuery',
+                    annotations: {
+                        title: 'Run SELECT query',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description:
                         'Run a SELECT statement through the ADT Data Preview SQL console. Read-only — the ' +
                         'service rejects DML. Returns {columns, values}.',

@@ -7,6 +7,11 @@ export class PrettyPrinterHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'prettyPrinterSetting',
+                    annotations: {
+                        title: 'Pretty printer settings',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Current pretty printer settings (indentation and casing style) of the logged-on user.',
                     inputSchema: {
                         type: 'object',
@@ -19,6 +24,13 @@ export class PrettyPrinterHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'setPrettyPrinterSetting',
+                    annotations: {
+                        title: 'Change pretty printer settings',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Change the pretty printer settings. These are USER-LEVEL settings on the SAP system - read them first with prettyPrinterSetting and restore them if you only needed a one-off format.',
                     inputSchema: {
                         type: 'object',
@@ -44,6 +56,11 @@ export class PrettyPrinterHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'prettyPrinter',
+                    annotations: {
+                        title: 'Format source',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Format ABAP source server-side with the current settings and return it. Writes nothing - use setObjectSource to persist.',
                     inputSchema: {
                         type: 'object',

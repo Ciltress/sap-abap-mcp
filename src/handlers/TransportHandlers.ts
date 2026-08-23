@@ -7,6 +7,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportInfo',
+                    annotations: {
+                        title: 'Transport options for an object',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Ask which transport requests can take a change to this object, and whether it is local. Call this BEFORE writing: TRANSPORTS[] lists usable requests, MESSAGES[] carries warnings.',
                     inputSchema: {
                         type: 'object',
@@ -39,6 +44,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'createTransport',
+                    annotations: {
+                        title: 'Create transport request',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Create a workbench transport request. Returns the new request number as a plain string.',
                     inputSchema: {
                         type: 'object',
@@ -77,6 +89,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'hasTransportConfig',
+                    annotations: {
+                        title: 'Transport configuration support',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Whether this system uses the newer transport-configuration feature (which the transportConfigurations tools build on).',
                     inputSchema: {
                         type: 'object',
@@ -89,6 +106,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportConfigurations',
+                    annotations: {
+                        title: 'List transport configurations',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'List the transport configurations, each with the uri and etag the get/set tools need.',
                     inputSchema: {
                         type: 'object',
@@ -101,6 +123,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'getTransportConfiguration',
+                    annotations: {
+                        title: 'Read transport configuration',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Read one transport configuration, including its etag.',
                     inputSchema: {
                         type: 'object',
@@ -121,6 +148,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'setTransportsConfig',
+                    annotations: {
+                        title: 'Update transport configuration',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Update a transport configuration. Uses optimistic locking: a stale etag is rejected, so re-read with getTransportConfiguration first.',
                     inputSchema: {
                         type: 'object',
@@ -149,6 +183,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'createTransportsConfig',
+                    annotations: {
+                        title: 'Create transport configuration',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: false,
+                        openWorldHint: false
+                    },
                     description: 'Create a new, empty transport configuration.',
                     inputSchema: {
                         type: 'object',
@@ -161,6 +202,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'userTransports',
+                    annotations: {
+                        title: 'Transports of a user',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Transport requests owned by a user, split into workbench and customizing.',
                     inputSchema: {
                         type: 'object',
@@ -185,6 +231,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportsByConfig',
+                    annotations: {
+                        title: 'Transports by configuration',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Transport requests visible through a transport configuration, split into workbench and customizing.',
                     inputSchema: {
                         type: 'object',
@@ -209,6 +260,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportDelete',
+                    annotations: {
+                        title: 'Delete transport request',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Delete a transport request. Only works while it is unreleased.',
                     inputSchema: {
                         type: 'object',
@@ -229,6 +287,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportRelease',
+                    annotations: {
+                        title: 'Release transport',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: true
+                    },
                     description: 'Release a transport request - starts promotion to the next system and cannot be undone. Read the returned TransportReleaseReport[]: an HTTP success does not mean the release succeeded.',
                     inputSchema: {
                         type: 'object',
@@ -261,6 +326,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportSetOwner',
+                    annotations: {
+                        title: 'Change transport owner',
+                        readOnlyHint: false,
+                        destructiveHint: true,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Hand a transport request over to another user.',
                     inputSchema: {
                         type: 'object',
@@ -285,6 +357,13 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportAddUser',
+                    annotations: {
+                        title: 'Add task to transport',
+                        readOnlyHint: false,
+                        destructiveHint: false,
+                        idempotentHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Add a co-developer task for another user to a transport request.',
                     inputSchema: {
                         type: 'object',
@@ -309,6 +388,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'systemUsers',
+                    annotations: {
+                        title: 'System users',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Users known to the system - for validating transportSetOwner and transportAddUser.',
                     inputSchema: {
                         type: 'object',
@@ -321,6 +405,11 @@ export class TransportHandlers extends BaseHandler {
             {
                 definition: {
                     name: 'transportReference',
+                    annotations: {
+                        title: 'Resolve TADIR triple',
+                        readOnlyHint: true,
+                        openWorldHint: false
+                    },
                     description: 'Resolve a TADIR triple (pgmid, object type, object name) to the ADT URI of that object inside a transport.',
                     inputSchema: {
                         type: 'object',
