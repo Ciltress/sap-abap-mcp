@@ -186,6 +186,22 @@
           "default": "0.0.0.0"
         },
         {
+          "name": "ABAP_MCP_HTTP_ALLOWED_ORIGINS",
+          "description": "Browser origins allowed to call /mcp in http mode, comma-separated; * allows any. Unset means no browser origin is served, which is the DNS-rebinding guard: a request carrying no Origin header is not a browser and passes, so ordinary MCP clients are unaffected. Allow-listed origins also get the matching CORS response headers.",
+          "default": ""
+        },
+        {
+          "name": "ABAP_MCP_HTTP_ALLOWED_HOSTS",
+          "description": "Host header values this server answers to in http mode, comma-separated, port optional. Defence in depth behind the origin check. Unset means any Host, which is what a deployment behind a proxy that rewrites Host wants.",
+          "default": ""
+        },
+        {
+          "name": "ABAP_MCP_HTTP_RATE_LIMIT",
+          "description": "Requests per minute allowed per MCP session in http mode, as a token bucket so a legitimate burst inside one turn is not punished. 0 or unset turns it off. Protects the shared SAP system from one agent in a loop, which a proxy's per-address limit cannot see.",
+          "format": "number",
+          "default": "0"
+        },
+        {
           "name": "SAP_JSONRPC_PATH",
           "description": "ICF path of the SAP Gateway JSON-RPC service the RFC tools call, when it is published under an alias.",
           "default": "/sap/gw/jsonrpc"

@@ -804,9 +804,10 @@ where `<token>` is an access token that client obtained from SAP's own OAuth 2.0
 (or BTP's), scoped and issued the same way any OAuth client in [§11](#11-oauth-20-mode) would be. On
 the first request (`initialize`, no `Mcp-Session-Id` yet) this server takes that token, builds a
 fresh ADT session from it exactly as `SAP_OAUTH_TOKEN` (the `static` grant) would in stdio mode, and
-mints an `Mcp-Session-Id` the client repeats on every later request for that session. A missing or
-malformed `Authorization` header is rejected before any SAP traffic — the token is this transport's
-only credential, and there is no separate shared secret to fall back on.
+mints an `Mcp-Session-Id` the client repeats on every later request for that session. A request
+carrying neither an `Authorization` header nor an `X-SAP-Refresh-Token` ([the refresh path](#sessions-that-renew-themselves))
+is rejected before any SAP traffic — the caller's own OAuth credential is this transport's only
+credential, and there is no shared secret to fall back on.
 
 **This is real per-user isolation, not a shared technical account with an HTTP front door bolted on.**
 Two team members connecting at the same time get two independent SAP sessions, two independent sets
@@ -819,8 +820,9 @@ the first place.
 The `static` grant this reduces to does not renew itself ([§11](#11-oauth-20-mode)'s grant table): a
 session whose token has expired fails outright rather than silently minting a replacement, and the
 client is expected to reconnect with a fresh one — the same way any OAuth client would after a token
-expires, and consistent with the fact that this server was never handed a client secret or a refresh
-token it could use to mint one on that session's behalf.
+expires. A client that would rather not be disconnected every token lifetime can hand its own refresh
+token over instead; that is [the refresh path](#sessions-that-renew-themselves), and it is the caller's
+refresh token, not a credential the container holds on anyone's behalf.
 
 ### Configuration
 
@@ -828,13 +830,20 @@ token it could use to mint one on that session's behalf.
 ABAP_MCP_TRANSPORT=http      # default: stdio
 ABAP_MCP_HTTP_PORT=3000      # default: 3000
 ABAP_MCP_HTTP_HOST=0.0.0.0   # default: 0.0.0.0 — all interfaces, the usual choice in a container
+
+ABAP_MCP_HTTP_ALLOWED_ORIGINS=   # default: empty — no browser origin is served
+ABAP_MCP_HTTP_ALLOWED_HOSTS=     # default: empty — any Host header
+ABAP_MCP_HTTP_RATE_LIMIT=0       # default: 0 — no per-session ceiling
 ```
 
-| Variable             | Meaning                                                                                                                             |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `ABAP_MCP_TRANSPORT` | `stdio` (default) or `http`. Everything else in this section applies only to `http`.                                                |
-| `ABAP_MCP_HTTP_PORT` | The port the Streamable HTTP endpoint listens on, at `/mcp`.                                                                        |
-| `ABAP_MCP_HTTP_HOST` | The address to bind. `0.0.0.0` for a container; `127.0.0.1` to restrict to loopback (e.g. behind a reverse proxy on the same host). |
+| Variable                        | Meaning                                                                                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ABAP_MCP_TRANSPORT`            | `stdio` (default) or `http`. Everything else in this section applies only to `http`.                                                                |
+| `ABAP_MCP_HTTP_PORT`            | The port the Streamable HTTP endpoint listens on, at `/mcp`.                                                                                        |
+| `ABAP_MCP_HTTP_HOST`            | The address to bind. `0.0.0.0` for a container; `127.0.0.1` to restrict to loopback (e.g. behind a reverse proxy on the same host).                 |
+| `ABAP_MCP_HTTP_ALLOWED_ORIGINS` | Browser origins allowed to call `/mcp`, comma-separated; `*` allows any. Empty serves no browser origin at all. See below.                          |
+| `ABAP_MCP_HTTP_ALLOWED_HOSTS`   | `Host` header values this server answers to, comma-separated, port optional. Empty accepts any. See below.                                          |
+| `ABAP_MCP_HTTP_RATE_LIMIT`      | Requests per minute per MCP session. `0` (the default) is off. See below.                                                                           |
 
 `SAP_URL`, `SAP_CLIENT`, `SAP_LANGUAGE`, `SAP_CA_FILE` and `NODE_TLS_REJECT_UNAUTHORIZED` still apply
 — they describe the SAP _system_, which is the same for every session. `SAP_USER` is still required to
@@ -844,11 +853,106 @@ given session actually is.
 
 This mode still runs `docker-entrypoint.sh`, but its Kerberos setup is skipped when
 `ABAP_MCP_TRANSPORT=http` is set — `resolveAuthMode()`'s pick describes nothing real once every
-session logs on with its own token, so there is nothing for it to prepare.
+session logs on with its own token, so there is nothing for it to prepare. The container-level server
+does not resolve a logon from the environment at all in this mode
+([`perConnectionSessionSource()`](../src/session.ts)): it holds no credential, and the `SAP_OAUTH_*`
+variables it may carry are there for the _sessions_ to refresh with, not for it to log on with.
+
+### Which origins may connect
+
+A browser page cannot be allowed to drive this endpoint just because it can reach it. Given any
+origin, an attacking page can make the browser resolve a name it controls to `127.0.0.1` — or to
+whatever internal address this container listens on — and post to it. Binding to loopback is not an
+access control against that, and neither is the reverse proxy this section otherwise defers to,
+because the request never passes through it. This is DNS rebinding, and the MCP specification asks a
+Streamable HTTP server to defend against it itself.
+
+What the attacking page cannot forge is the `Origin` header the browser attaches, so that is what is
+checked, before the path is matched and before any body is read:
+
+- **No `Origin` header** — not a browser, so it passes. That is every MCP client that is not a web
+  page, including every client this server has ever been used from. `initialize` is a JSON `POST`,
+  which no browser can send without a preflight, so a real browser always announces itself here.
+- **An `Origin` in `ABAP_MCP_HTTP_ALLOWED_ORIGINS`** — served, and answered with the matching CORS
+  headers: the origin echoed back in `Access-Control-Allow-Origin` (never `*`, which a browser
+  refuses alongside an `Authorization` header), `Vary: Origin`, and `Mcp-Session-Id` in
+  `Access-Control-Expose-Headers` so the client can read the session id it has to repeat. `OPTIONS`
+  preflights are answered with the `Authorization`, `Mcp-Session-Id`, `Mcp-Protocol-Version`,
+  `Last-Event-ID` and `X-SAP-Refresh-Token` request headers allowed.
+- **Any other `Origin`** — `403`, with no CORS headers on the response.
+
+`*` is accepted and means what it says. It is a deliberate opt-out, not the default.
+
+`ABAP_MCP_HTTP_ALLOWED_HOSTS` is defence in depth behind that: the `Host` values this server answers
+to, for the case where the name that resolved here is the attacker's rather than the operator's. A
+port on the header is ignored, so `mcp.internal.example.com` matches whatever port the container is
+published on. Leave it empty behind a proxy that rewrites `Host` — there it would only ever reject
+the proxy.
+
+### Sessions that renew themselves
+
+A session's access token expires, and the `static` grant cannot replace it: SAP starts refusing, and
+the client reconnects with a fresh token. For an agent halfway through a change that is a real
+interruption rather than a theoretical one.
+
+A client that would rather not be disconnected sends its **own** refresh token as well:
+
+```
+Authorization: Bearer <access token>       # optional when the header below is present
+X-SAP-Refresh-Token: <refresh token>
+```
+
+The session is then built on the `refresh_token` grant from [§11](#11-oauth-20-mode) instead of
+`static`, with everything that grant already does — the token cache, and rotating the refresh token in
+memory when the authorization server hands back a new one, which BTP does and without which the
+_second_ refresh fails with `invalid_grant`.
+
+This needs the deployment to configure the OAuth **client**, because a refresh token is redeemed
+against a client registration:
+
+```bash
+SAP_OAUTH_TOKEN_URL=https://your-sap-server.example.com:44301/sap/bc/sec/oauth2/token
+SAP_OAUTH_CLIENT_ID=MCP_CLIENT
+SAP_OAUTH_CLIENT_SECRET=…        # only if the client is confidential
+```
+
+`X-SAP-Refresh-Token` without those is a `400` naming them, rather than a confusing failure inside the
+OAuth layer.
+
+**This does not reintroduce a shared logon.** The client registration is the deployment's; the refresh
+token is the caller's, and it is what decides which SAP user the session becomes. Two team members
+sending two refresh tokens still get two distinct identities, two ADT logons and two sets of locks —
+the isolation this whole section is about is unchanged. What the container gains is the ability to
+_redeem_ what the caller already holds, not a credential of its own: it can mint tokens for a session
+that presented a refresh token, and for nobody else.
+
+When both headers arrive, the refresh token wins — a session that can renew itself is strictly better
+than one pinned to a single access token.
+
+### One session's share of the system
+
+`ABAP_MCP_HTTP_RATE_LIMIT` sets a per-session ceiling in requests per minute. It is `0` — off — unless
+an operator sets one, because the right number depends on the system behind it and a wrong default
+would break a legitimate bulk read.
+
+This is not the proxy's rate limit and does not replace it. A proxy sees addresses; what is worth
+limiting here is one **session** — one agent that has gone into a loop, spending a SAP work process per
+request against a system a whole team shares. From the front that looks exactly like healthy traffic.
+
+It is a token bucket rather than a fixed window, so a burst of legitimate reads inside a single turn is
+not punished for arriving together, and the budget refills continuously. Over the ceiling the answer is
+`429` with a `Retry-After` in seconds. Before a session exists the budget is tracked against the
+credential presented (hashed — nothing keeps a copy of a bearer token), so a client cannot get a fresh
+allowance by reconnecting; a request with neither is tracked against its peer address.
 
 ### What is deliberately not here
 
-CORS handling, DNS-rebinding host/origin allow-listing, TLS termination, rate limiting and token
-refresh are left to the deployment: put a reverse proxy or ingress in front that terminates TLS and
-enforces network access, the same as any other internal service. Nothing about the SAP side of this
-server changes if one is added later.
+**TLS termination.** Put a reverse proxy or ingress in front that terminates TLS and enforces network
+access, the same as any other internal service — that is where a certificate and its renewal already
+live in most deployments, and nothing about the SAP side of this server changes if one is added later.
+`ABAP_MCP_HTTP_HOST=127.0.0.1` restricts this server to a proxy on the same host.
+
+Full OAuth 2.0 authorization-server behaviour is also not here: this server never issues tokens,
+redirects anyone through an authorization-code flow, or holds a client secret on a user's behalf. It
+consumes what the caller was already issued. A client that has no token yet gets one the same way any
+other OAuth client would — from SAP's own authorization server, or BTP's.

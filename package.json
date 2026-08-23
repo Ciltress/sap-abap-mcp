@@ -20,7 +20,7 @@
     "test:types": "tsc -p tsconfig.json",
     "start": "node ./dist/index.js",
     "dev": "npx @modelcontextprotocol/inspector ./dist/index.js",
-    "build": "npm run build",
+    "build": "tsc",
     "docs:tools": "node scripts/generate-tool-docs.mjs"
   },
   "keywords": [

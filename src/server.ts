@@ -10,7 +10,7 @@ import {
   McpError,
   ErrorCode,
 } from '@modelcontextprotocol/sdk/types.js';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   createServer as createHttpServer,
   type IncomingMessage,
@@ -43,7 +43,7 @@ import {
   isLoginError,
 } from 'abap-adt-api';
 import { injectSsoSession } from './sso.js';
-import { createSessionSource } from './session.js';
+import { createSessionSource, perConnectionSessionSource } from './session.js';
 import type { SessionSource } from './session.js';
 import { probeReachability } from './reachability.js';
 import type { ReachabilityReport } from './reachability.js';
@@ -160,6 +160,161 @@ function writeJsonRpcError(
   res.end(
     JSON.stringify({ jsonrpc: '2.0', error: { code, message }, id: null }),
   );
+}
+
+/**
+ * The caller's own SAP OAuth refresh token, when they want the session to renew
+ * itself rather than die with its first access token. Optional, and only usable
+ * when the deployment configured a token endpoint to redeem it against — see
+ * `startSession` in runHttp().
+ */
+function extractRefreshToken(req: IncomingMessage): string | undefined {
+  const header = req.headers['x-sap-refresh-token'];
+  const value = Array.isArray(header) ? header[0] : header;
+  const trimmed = typeof value === 'string' ? value.trim() : '';
+  return trimmed || undefined;
+}
+
+/** A comma- or whitespace-separated environment list, emptied of blanks. */
+function parseHttpList(value: string | undefined): string[] {
+  return String(value ?? '')
+    .split(/[,\s]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+/** Scheme, host and port, lower-cased, so two spellings of one origin compare equal. */
+function normalizeOrigin(origin: string): string {
+  try {
+    return new URL(origin).origin.toLowerCase();
+  } catch {
+    return origin.trim().toLowerCase();
+  }
+}
+
+/** The headers a browser client has to be allowed to send, and to read back. */
+const CORS_REQUEST_HEADERS =
+  'Authorization, Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID, X-SAP-Refresh-Token';
+const CORS_EXPOSED_HEADERS = 'Mcp-Session-Id';
+
+interface OriginPolicy {
+  /** `*` was allow-listed: every origin passes, and CORS headers are echoed back. */
+  any: boolean;
+  list: Set<string>;
+}
+
+/**
+ * Which browser origins may talk to `/mcp` — the DNS-rebinding guard the MCP
+ * spec asks a Streamable HTTP server to apply for itself.
+ *
+ * The reverse proxy the rest of this transport defers to cannot do this one. A
+ * page on any origin can make the browser resolve a name it controls to
+ * `127.0.0.1` and post to whatever is listening there, so binding to loopback
+ * is not an access control, and the proxy is not in that request's path at all.
+ * What the attacking page cannot forge is the `Origin` header the browser
+ * attaches, so that is what is checked.
+ *
+ * Requests carrying no `Origin` pass: those are not browser requests, which is
+ * every MCP client that is not a web page. `initialize` is a JSON POST, which
+ * no browser can send without a preflight, so a real browser always announces
+ * itself here.
+ */
+function resolveOriginPolicy(env: NodeJS.ProcessEnv): OriginPolicy {
+  const entries = parseHttpList(env.ABAP_MCP_HTTP_ALLOWED_ORIGINS);
+  return {
+    any: entries.includes('*'),
+    list: new Set(
+      entries.filter((entry) => entry !== '*').map(normalizeOrigin),
+    ),
+  };
+}
+
+function originAllowed(origin: string, policy: OriginPolicy): boolean {
+  return policy.any || policy.list.has(normalizeOrigin(origin));
+}
+
+/**
+ * Defence in depth behind the origin check: a `Host` allow-list, for the
+ * rebinding case where the attacker's name — not the operator's — is what
+ * resolved to this container. Unset means any Host, which is what a deployment
+ * behind a proxy that already rewrites Host wants.
+ */
+function hostAllowed(req: IncomingMessage, allowed: string[]): boolean {
+  if (allowed.length === 0) return true;
+  const host = String(req.headers.host ?? '').toLowerCase();
+  const withoutPort = host.replace(/:\d+$/, '');
+  return allowed.some((entry) => {
+    const candidate = entry.toLowerCase();
+    return candidate === host || candidate === withoutPort;
+  });
+}
+
+interface RateLimiter {
+  /** Spends one request's worth of budget, or says how long to wait for it. */
+  take(key: string): { ok: true } | { ok: false; retryAfter: number };
+}
+
+/**
+ * A per-session request ceiling, off unless `ABAP_MCP_HTTP_RATE_LIMIT` sets one.
+ *
+ * This is not the proxy's rate limit and does not replace it. A proxy sees
+ * addresses; the thing worth limiting here is one *session* — one agent that
+ * has gone into a loop and is putting a work process per request into a shared
+ * SAP system, which looks exactly like healthy traffic from the front and takes
+ * the system down for everyone else. A token bucket rather than a fixed window,
+ * so a burst of legitimate reads inside one turn is not punished for arriving
+ * together.
+ */
+function createRateLimiter(env: NodeJS.ProcessEnv): RateLimiter | undefined {
+  const limit = Number(env.ABAP_MCP_HTTP_RATE_LIMIT ?? 0);
+  if (!Number.isFinite(limit) || limit <= 0) return undefined;
+
+  const windowMs = 60_000;
+  const refillPerMs = limit / windowMs;
+  const buckets = new Map<string, { tokens: number; updated: number }>();
+
+  return {
+    take(key: string) {
+      const now = Date.now();
+      // Sessions come and go; buckets belonging to ones long gone are swept
+      // rather than tracked, so nothing has to be told a session ended.
+      if (buckets.size > 1024) {
+        for (const [id, bucket] of buckets) {
+          if (now - bucket.updated > windowMs * 2) buckets.delete(id);
+        }
+      }
+      const bucket = buckets.get(key) ?? { tokens: limit, updated: now };
+      bucket.tokens = Math.min(
+        limit,
+        bucket.tokens + (now - bucket.updated) * refillPerMs,
+      );
+      bucket.updated = now;
+      buckets.set(key, bucket);
+
+      if (bucket.tokens < 1) {
+        const waitMs = (1 - bucket.tokens) / refillPerMs;
+        return { ok: false, retryAfter: Math.max(1, Math.ceil(waitMs / 1000)) };
+      }
+      bucket.tokens -= 1;
+      return { ok: true };
+    },
+  };
+}
+
+/**
+ * What the rate limit counts. The session once there is one; before that the
+ * credential the caller presented, hashed because this is a map key that ends
+ * up in memory and a bearer token is not something to keep a copy of. The peer
+ * address is the last resort, for a request that has neither.
+ */
+function rateLimitKey(req: IncomingMessage): string {
+  const sessionId = req.headers['mcp-session-id'];
+  if (typeof sessionId === 'string' && sessionId) return `session:${sessionId}`;
+  const credential = extractBearerToken(req) ?? extractRefreshToken(req);
+  if (credential) {
+    return `token:${createHash('sha256').update(credential).digest('hex').slice(0, 32)}`;
+  }
+  return `peer:${req.socket.remoteAddress ?? 'unknown'}`;
 }
 
 /**
@@ -316,7 +471,17 @@ export class AbapAdtServer extends Server {
     // decided once here rather than re-read on every logon — see ./session.ts.
     // The agent it may carry goes on the ADT client too, not just the logon:
     // with icm/HTTPS/verify_client = 2 every handshake needs the certificate.
-    this.sessionSource = dependencies.sessionSource ?? createSessionSource(env);
+    //
+    // Except in HTTP mode, where the choice describes nothing: the sessions do
+    // the logging on, each from its own client's token, and this process holds
+    // no credential. Reading one out of the environment here would make a
+    // container that configures SAP_OAUTH_* so its *sessions* can refresh fail
+    // at startup as a half-configured client_credentials logon.
+    this.sessionSource =
+      dependencies.sessionSource ??
+      (resolveTransportMode(env) === 'http'
+        ? perConnectionSessionSource()
+        : createSessionSource(env));
 
     // The placeholder only satisfies ADTClient's non-empty-password constructor
     // check — it is never sent in the two password-less modes, because the session
@@ -1193,11 +1358,20 @@ export class AbapAdtServer extends Server {
    * HTTP client supplies its own SAP OAuth bearer token on `initialize` (see
    * `extractBearerToken`), which becomes that session's own SAP identity —
    * true per-user isolation, not one shared technical user serving everyone
-   * who connects. See docs/Authentication.md for the env vars this reads.
+   * who connects. A caller that also sends `X-SAP-Refresh-Token` gets the
+   * `refresh_token` grant instead, and a session that renews itself.
+   *
+   * Three gates sit in front of that, in this order: the origin/host allow-list
+   * (`resolveOriginPolicy`, which a reverse proxy cannot do for us), the
+   * per-session rate limit (`createRateLimiter`, off by default), and the
+   * credential check. See docs/Authentication.md for the env vars this reads.
    */
   protected async runHttp(): Promise<{ port: number; close(): Promise<void> }> {
     const port = Number(this.env.ABAP_MCP_HTTP_PORT ?? 3000);
     const host = this.env.ABAP_MCP_HTTP_HOST ?? '0.0.0.0';
+    const originPolicy = resolveOriginPolicy(this.env);
+    const allowedHosts = parseHttpList(this.env.ABAP_MCP_HTTP_ALLOWED_HOSTS);
+    const rateLimiter = createRateLimiter(this.env);
 
     const sessions = new Map<
       string,
@@ -1219,24 +1393,59 @@ export class AbapAdtServer extends Server {
       body: unknown,
     ): Promise<void> => {
       const token = extractBearerToken(req);
-      if (!token) {
+      const refreshToken = extractRefreshToken(req);
+      if (!token && !refreshToken) {
         writeJsonRpcError(
           res,
           401,
           ErrorCode.InvalidRequest,
           'Missing or malformed Authorization header. This server expects ' +
             '`Authorization: Bearer <SAP OAuth access token>` on every request — that token is this ' +
-            "session's own SAP identity, not a shared server credential.",
+            "session's own SAP identity, not a shared server credential. A session that should " +
+            'renew itself instead sends its own refresh token as `X-SAP-Refresh-Token`.',
         );
         return;
       }
 
-      const server = this.createSessionServer({
-        ...this.env,
-        SAP_AUTH_MODE: 'oauth',
-        SAP_OAUTH_GRANT: 'static',
-        SAP_OAUTH_TOKEN: token,
-      });
+      // The refresh token is the caller's, but the client registration it is
+      // redeemed against belongs to the deployment: a token endpoint and a
+      // client id have to be configured on the container for the grant to be
+      // possible at all. Saying so here beats letting resolveOAuthConfig()
+      // reject it as a misconfigured server, which it would look like.
+      if (refreshToken && !(this.env.SAP_OAUTH_TOKEN_URL && this.env.SAP_OAUTH_CLIENT_ID)) {
+        writeJsonRpcError(
+          res,
+          400,
+          ErrorCode.InvalidRequest,
+          'X-SAP-Refresh-Token was supplied, but this container has no OAuth client to redeem it ' +
+            'with. Set SAP_OAUTH_TOKEN_URL and SAP_OAUTH_CLIENT_ID (plus SAP_OAUTH_CLIENT_SECRET if ' +
+            'the client is confidential) on the container, or send only `Authorization: Bearer ' +
+            '<access token>` and reconnect when it expires.',
+        );
+        return;
+      }
+
+      // Two grants, one per credential the caller can present. `static` is the
+      // original: the access token is the whole session, and it dies with it.
+      // `refresh_token` renews itself against the deployment's client
+      // registration — still that caller's own SAP identity, because the
+      // refresh token is theirs. Either way nothing here logs on as a shared
+      // technical user.
+      const sessionEnv: NodeJS.ProcessEnv = { ...this.env, SAP_AUTH_MODE: 'oauth' };
+      // The session server is not the process serving HTTP — it is the thing
+      // behind one connection, and it does log on. Leaving the transport set
+      // would hand it the credential-less session source this process uses.
+      delete sessionEnv.ABAP_MCP_TRANSPORT;
+      if (refreshToken) {
+        sessionEnv.SAP_OAUTH_GRANT = 'refresh_token';
+        sessionEnv.SAP_OAUTH_REFRESH_TOKEN = refreshToken;
+        delete sessionEnv.SAP_OAUTH_TOKEN;
+      } else {
+        sessionEnv.SAP_OAUTH_GRANT = 'static';
+        sessionEnv.SAP_OAUTH_TOKEN = token;
+      }
+
+      const server = this.createSessionServer(sessionEnv);
       server.onerror = (error) => console.error('[MCP Error]', error);
 
       try {
@@ -1246,7 +1455,9 @@ export class AbapAdtServer extends Server {
           res,
           401,
           ErrorCode.InvalidRequest,
-          `SAP rejected this session's token: ${error?.message ?? error}`,
+          refreshToken
+            ? `This session's refresh token was refused: ${error?.message ?? error}`
+            : `SAP rejected this session's token: ${error?.message ?? error}`,
         );
         return;
       }
@@ -1267,6 +1478,39 @@ export class AbapAdtServer extends Server {
     };
 
     const httpServer = createHttpServer(async (req, res) => {
+      // Origin first, before the path check and before anything reads a body:
+      // a rebinding attempt is not entitled to know what this server serves.
+      const origin = req.headers.origin;
+      if (typeof origin === 'string' && origin) {
+        if (!originAllowed(origin, originPolicy)) {
+          writeJsonRpcError(
+            res,
+            403,
+            ErrorCode.InvalidRequest,
+            `Origin '${origin}' is not allowed. This endpoint answers browser origins only when ` +
+              'ABAP_MCP_HTTP_ALLOWED_ORIGINS names them; MCP clients that are not web pages send no ' +
+              'Origin header and are unaffected.',
+          );
+          return;
+        }
+        // Echoed rather than `*`: the allow-list is the decision, and a browser
+        // will not accept `*` alongside credentialed requests anyway.
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+        res.setHeader('Access-Control-Expose-Headers', CORS_EXPOSED_HEADERS);
+      }
+
+      if (!hostAllowed(req, allowedHosts)) {
+        writeJsonRpcError(
+          res,
+          403,
+          ErrorCode.InvalidRequest,
+          `Host '${req.headers.host ?? ''}' is not allowed. ABAP_MCP_HTTP_ALLOWED_HOSTS names the ` +
+            'names this server answers to.',
+        );
+        return;
+      }
+
       if (
         !req.url ||
         new URL(req.url, 'http://localhost').pathname !== '/mcp'
@@ -1278,6 +1522,36 @@ export class AbapAdtServer extends Server {
           'Not found. This server only serves /mcp.',
         );
         return;
+      }
+
+      // Answered before the rate limit: a preflight is the browser's overhead,
+      // not the client's traffic, and spending budget on it would make the
+      // ceiling mean something different for browser clients.
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': CORS_REQUEST_HEADERS,
+          'Access-Control-Max-Age': '600',
+        });
+        res.end();
+        return;
+      }
+
+      if (rateLimiter) {
+        const verdict = rateLimiter.take(rateLimitKey(req));
+        if (!verdict.ok) {
+          res.setHeader('Retry-After', String(verdict.retryAfter));
+          writeJsonRpcError(
+            res,
+            429,
+            ErrorCode.InvalidRequest,
+            `Rate limit exceeded for this session: ABAP_MCP_HTTP_RATE_LIMIT allows ` +
+              `${this.env.ABAP_MCP_HTTP_RATE_LIMIT} requests per minute. Retry in ` +
+              `${verdict.retryAfter}s. If this was one legitimate burst rather than a loop, raise ` +
+              'the limit rather than retrying harder — SAP is the resource being protected.',
+          );
+          return;
+        }
       }
 
       const sessionId = req.headers['mcp-session-id'];

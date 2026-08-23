@@ -294,6 +294,34 @@ export function createSessionSource(env: NodeJS.ProcessEnv = process.env): Sessi
 }
 
 /**
+ * The session source of a server that never logs on: the container-level
+ * process in Streamable HTTP mode.
+ *
+ * There, every MCP session builds its own source from the token its own client
+ * presented, and the process in front of them has no credential of its own. It
+ * used to get one anyway, because the constructor reads the environment
+ * unconditionally — harmless while an HTTP deployment set no `SAP_OAUTH_*` at
+ * all, and a startup crash the moment one did, since a container configured
+ * with a token endpoint and a client id so that *sessions* can refresh looks
+ * exactly like a misconfigured `client_credentials` logon from here.
+ *
+ * No `probe`: healthcheck reports `checked: false` rather than claiming to have
+ * verified a credential that does not exist.
+ */
+export function perConnectionSessionSource(): SessionSource {
+  return {
+    mode: 'oauth',
+    establish: async () => {
+      throw new Error(
+        'This server is running ABAP_MCP_TRANSPORT=http, where each MCP session logs on with its ' +
+          'own SAP OAuth token and the container itself holds no credential. Nothing should be ' +
+          'establishing a session at this level.',
+      );
+    },
+  };
+}
+
+/**
  * A session source that hands back what it was given.
  *
  * The third adapter, and the reason the seam earns its place: it is what lets a

@@ -145,6 +145,9 @@ Never commit `.env`; it is already in `.gitignore`.
 | `ABAP_MCP_TRANSPORT`             | `stdio` (default) or `http`. See [Running over HTTP](#running-over-http).                                                                                                        |
 | `ABAP_MCP_HTTP_PORT`             | Port for the Streamable HTTP endpoint. Default `3000`. Only read in `http` mode.                                                                                                 |
 | `ABAP_MCP_HTTP_HOST`             | Address to bind in `http` mode. Default `0.0.0.0`.                                                                                                                               |
+| `ABAP_MCP_HTTP_ALLOWED_ORIGINS`  | Browser origins allowed to call `/mcp`, comma-separated; `*` allows any. Empty (the default) serves none. Clients that send no `Origin` are unaffected.                          |
+| `ABAP_MCP_HTTP_ALLOWED_HOSTS`    | `Host` values this server answers to in `http` mode, comma-separated. Empty accepts any.                                                                                          |
+| `ABAP_MCP_HTTP_RATE_LIMIT`       | Requests per minute per MCP session in `http` mode. `0` (the default) is off.                                                                                                     |
 
 #### Sizing the server for its client
 
@@ -425,11 +428,14 @@ docker run --rm -p 3000:3000 \
 ADT client) but is never transmitted and has no bearing on who a given session actually is — SAP
 decides that from each session's own token, same as in [§11](docs/Authentication.md#11-oauth-20-mode).
 
-| Variable                  | Effect                                  |
-| ------------------------- | --------------------------------------- |
-| `ABAP_MCP_TRANSPORT=http` | Switches from stdio to Streamable HTTP. |
-| `ABAP_MCP_HTTP_PORT`      | Port to listen on. Default `3000`.      |
-| `ABAP_MCP_HTTP_HOST`      | Address to bind. Default `0.0.0.0`.     |
+| Variable                        | Effect                                                                                              |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `ABAP_MCP_TRANSPORT=http`       | Switches from stdio to Streamable HTTP.                                                             |
+| `ABAP_MCP_HTTP_PORT`            | Port to listen on. Default `3000`.                                                                  |
+| `ABAP_MCP_HTTP_HOST`            | Address to bind. Default `0.0.0.0`.                                                                 |
+| `ABAP_MCP_HTTP_ALLOWED_ORIGINS` | Browser origins allowed to call `/mcp`, comma-separated; `*` allows any. Empty (default) serves none. |
+| `ABAP_MCP_HTTP_ALLOWED_HOSTS`   | `Host` values answered to, comma-separated. Empty accepts any.                                       |
+| `ABAP_MCP_HTTP_RATE_LIMIT`      | Requests per minute per session. `0` (default) is off.                                              |
 
 Register a client the same way as any remote Streamable HTTP MCP server, pointing it at `/mcp` and
 supplying that user's own SAP OAuth token:
@@ -445,16 +451,27 @@ supplying that user's own SAP OAuth token:
 }
 ```
 
-A missing or malformed `Authorization` header is rejected with `401` before any SAP traffic; a token
-SAP itself refuses is also `401`, with SAP's own message. There is no separate shared secret to
-configure for the transport itself — the SAP token _is_ the access control.
+A request with no credential is rejected with `401` before any SAP traffic; a token SAP itself refuses
+is also `401`, with SAP's own message. There is no separate shared secret to configure for the
+transport itself — the SAP token _is_ the access control.
+
+A client that would rather not be disconnected each time its access token expires can send its own
+refresh token as `X-SAP-Refresh-Token` instead, and the session renews itself on the `refresh_token`
+grant. That needs `SAP_OAUTH_TOKEN_URL` and `SAP_OAUTH_CLIENT_ID` on the container — the client
+registration a refresh token is redeemed against is the deployment's, while the refresh token, and
+therefore the SAP identity, stays the caller's.
+
+Browser origins are refused unless `ABAP_MCP_HTTP_ALLOWED_ORIGINS` names them: that is the
+DNS-rebinding guard the MCP spec asks the server to apply itself, since a rebinding request never
+passes through the proxy in front. Allow-listed origins get the matching CORS headers. Clients that
+send no `Origin` — every MCP client that is not a web page — are unaffected.
 
 The container's `docker-entrypoint.sh` skips its Kerberos setup automatically when
 `ABAP_MCP_TRANSPORT=http` is set, since `resolveAuthMode()`'s pick describes nothing real once every
-session logs on with its own token. CORS, DNS-rebinding protection, TLS termination and rate limiting
-are left to whatever sits in front of the container (a reverse proxy or ingress), the same as for any
-other internal HTTP service. Full detail, including the OAuth `static`-grant mechanics this reduces
-to, is in [`docs/Authentication.md` §12](docs/Authentication.md#12-streamable-http-transport-and-per-connection-sessions).
+session logs on with its own token. TLS termination is left to whatever sits in front of the container
+(a reverse proxy or ingress), the same as for any other internal HTTP service. Full detail, including
+the OAuth grant mechanics this reduces to, is in
+[`docs/Authentication.md` §12](docs/Authentication.md#12-streamable-http-transport-and-per-connection-sessions).
 
 ### More than one system
 
