@@ -2,6 +2,8 @@
 
 [![main](https://github.com/Ciltress/sap-abap-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Ciltress/sap-abap-mcp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Ciltress/sap-abap-mcp/blob/main/LICENSE)
+[![M8ven Score](https://m8ven.ai/badge/mcp/ciltress-sap-abap-mcp-19n9t6?v=0cef00330b477e3d88d6d9c8c7662539)](https://m8ven.ai/mcp/ciltress-sap-abap-mcp-19n9t6)
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/ciltress/sap-abap-mcp.git)
 
 </div>
 
