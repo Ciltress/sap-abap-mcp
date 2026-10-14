@@ -10,6 +10,8 @@ export class AtcHandlers extends BaseHandler {
                     annotations: {
                         title: 'ATC settings',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'System ATC settings, including the default check variant. Start an ATC workflow here.',
@@ -27,6 +29,8 @@ export class AtcHandlers extends BaseHandler {
                     annotations: {
                         title: 'Resolve ATC check variant',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Resolve and validate an ATC check variant name before starting a run.',
@@ -85,6 +89,8 @@ export class AtcHandlers extends BaseHandler {
                     annotations: {
                         title: 'ATC findings',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Findings of an ATC run: objects[].findings[] with priority, check title and location.',
@@ -127,6 +133,8 @@ export class AtcHandlers extends BaseHandler {
                     annotations: {
                         title: 'ATC contacts',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Users available as ATC contacts or exemption approvers.',
@@ -144,6 +152,8 @@ export class AtcHandlers extends BaseHandler {
                     annotations: {
                         title: 'Propose ATC exemption',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Start an exemption for a finding: returns the proposal object to fill in and submit.',

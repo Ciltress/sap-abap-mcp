@@ -10,6 +10,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'Transport options for an object',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Ask which transport requests can take a change to this object, and whether it is local. Call this BEFORE writing: TRANSPORTS[] lists usable requests, MESSAGES[] carries warnings.',
@@ -92,6 +94,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'Transport configuration support',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Whether this system uses the newer transport-configuration feature (which the transportConfigurations tools build on).',
@@ -109,6 +113,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'List transport configurations',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'List the transport configurations, each with the uri and etag the get/set tools need.',
@@ -126,6 +132,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'Read transport configuration',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Read one transport configuration, including its etag.',
@@ -205,6 +213,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'Transports of a user',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Transport requests owned by a user, split into workbench and customizing.',
@@ -234,6 +244,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'Transports by configuration',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Transport requests visible through a transport configuration, split into workbench and customizing.',
@@ -391,6 +403,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'System users',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Users known to the system - for validating transportSetOwner and transportAddUser.',
@@ -408,6 +422,8 @@ export class TransportHandlers extends BaseHandler {
                     annotations: {
                         title: 'Resolve TADIR triple',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Resolve a TADIR triple (pgmid, object type, object name) to the ADT URI of that object inside a transport.',

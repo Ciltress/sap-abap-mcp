@@ -39,6 +39,8 @@ export class DdicHandlers extends BaseHandler {
                     annotations: {
                         title: 'Describe table fields',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -73,6 +75,8 @@ export class DdicHandlers extends BaseHandler {
                     annotations: {
                         title: 'CDS annotation vocabulary',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'The full CDS annotation vocabulary of this system, as a string. Large.',
@@ -90,6 +94,8 @@ export class DdicHandlers extends BaseHandler {
                     annotations: {
                         title: 'DDIC element model',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Semantic model (fields, types, annotations) of a table, view or CDS entity.',
@@ -132,6 +138,8 @@ export class DdicHandlers extends BaseHandler {
                     annotations: {
                         title: 'DDIC where-used',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Where-used / lineage information at data dictionary level.',
@@ -155,6 +163,8 @@ export class DdicHandlers extends BaseHandler {
                     annotations: {
                         title: 'Package value help',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Value help for package attributes (application/software components, transport layers, translation relevance).',

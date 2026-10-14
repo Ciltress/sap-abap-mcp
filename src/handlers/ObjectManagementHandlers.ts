@@ -169,6 +169,8 @@ export class ObjectManagementHandlers extends BaseHandler {
           annotations: {
             title: 'Inactive objects',
             readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
             openWorldHint: false
           },
           description:

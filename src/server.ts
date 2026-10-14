@@ -877,6 +877,8 @@ export class AbapAdtServer extends Server {
       annotations: {
         title: 'Health and system identity',
         readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false
       },
       description:

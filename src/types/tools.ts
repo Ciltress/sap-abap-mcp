@@ -48,6 +48,12 @@ export interface ToolProperty {
  *   reaches past that system: an external Git remote, a transport released
  *   towards the next system in the landscape, an OData service published to its
  *   consumers, or arbitrary ABAP that can do any of those itself.
+ *
+ * Every tool states all four, read-only ones included — there they are always
+ * `destructiveHint: false, idempotentHint: true`. The specification only gives
+ * those two a meaning when a tool writes, but OpenAI's directory rejects a tool
+ * that leaves either out, and a client that falls back to the defaults would
+ * read a missing `destructiveHint` as `true`.
  */
 export interface ToolAnnotations {
   /** Human-readable name for the tool, for UIs that show one instead of `name`. */

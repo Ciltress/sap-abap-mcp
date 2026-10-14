@@ -89,6 +89,8 @@ export class BasisHandlers extends BaseHandler {
                 annotations: {
                     title: 'Logged-on users (SM04)',
                     readOnlyHint: true,
+                    destructiveHint: false,
+                    idempotentHint: true,
                     openWorldHint: false
                 },
                 description:
@@ -136,6 +138,8 @@ export class BasisHandlers extends BaseHandler {
                 annotations: {
                     title: 'Profile parameters (RZ11)',
                     readOnlyHint: true,
+                    destructiveHint: false,
+                    idempotentHint: true,
                     openWorldHint: false
                 },
                 description:
@@ -165,6 +169,8 @@ export class BasisHandlers extends BaseHandler {
                 annotations: {
                     title: 'Logon configuration',
                     readOnlyHint: true,
+                    destructiveHint: false,
+                    idempotentHint: true,
                     openWorldHint: false
                 },
                 description:

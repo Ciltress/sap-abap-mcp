@@ -10,6 +10,8 @@ export class ObjectSourceHandlers extends BaseHandler {
           annotations: {
             title: 'Read source',
             readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
             openWorldHint: false
           },
           description:

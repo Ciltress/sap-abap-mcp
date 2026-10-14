@@ -10,6 +10,8 @@ export class QueryHandlers extends BaseHandler {
                     annotations: {
                         title: 'Read table contents',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -55,6 +57,8 @@ export class QueryHandlers extends BaseHandler {
                     annotations: {
                         title: 'Run SELECT query',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

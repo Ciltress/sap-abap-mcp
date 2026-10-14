@@ -235,6 +235,20 @@ describe('tools/list', () => {
         const { tools } = await client.listTools();
         expect(tools.length).toBe(129);
     });
+
+    it('sends all four hints on every tool, healthcheck included', async () => {
+        // What a directory checks is the wire, not the handlers: OpenAI's rejects a
+        // tool whose four hints are not all present booleans. healthcheck is defined
+        // in the server rather than a handler, so only this test sees it.
+        const { client } = await connect();
+        const { tools } = await client.listTools();
+
+        const incomplete = tools
+            .filter(t => ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']
+                .some(hint => typeof (t.annotations as any)?.[hint] !== 'boolean'))
+            .map(t => t.name);
+        expect(incomplete).toEqual([]);
+    });
 });
 
 describe('the collection gate', () => {

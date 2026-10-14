@@ -10,6 +10,8 @@ export class TraceHandlers extends BaseHandler {
                     annotations: {
                         title: 'Trace results',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Trace results available for a user. Their ids feed the hit list, DB access and statement tools.',
@@ -32,6 +34,8 @@ export class TraceHandlers extends BaseHandler {
                     annotations: {
                         title: 'Scheduled trace requests',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Scheduled trace requests (configurations) that have not produced a result yet.',
@@ -54,6 +58,8 @@ export class TraceHandlers extends BaseHandler {
                     annotations: {
                         title: 'Trace hit list',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Hit list of a trace: which statements consumed the runtime.',
@@ -83,6 +89,8 @@ export class TraceHandlers extends BaseHandler {
                     annotations: {
                         title: 'Trace database accesses',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Database accesses recorded in a trace, with their times and row counts.',
@@ -112,6 +120,8 @@ export class TraceHandlers extends BaseHandler {
                     annotations: {
                         title: 'Trace statements',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Statement-level detail of a trace, optionally drilled down automatically past a time threshold.',

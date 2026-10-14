@@ -170,10 +170,17 @@ Read them with the conventions this server applies uniformly:
 
 Each tool declares its own, next to its `name`. That is deliberate and matches `narrowingHint` and
 `needsFeature`: a table keyed by tool name goes stale silently on a rename, and here the failure
-would be a destructive tool quietly falling back to a client's defaults. `handlerContract.test.ts`
-checks every tool has them, and that a read-only tool does **not** state `destructiveHint` or
-`idempotentHint` — the specification defines both as meaningful only when the tool writes.
-[`docs/Tool-Reference.md`](./Tool-Reference.md) prints them under each tool.
+would be a destructive tool quietly falling back to a client's defaults.
+
+**Every tool states all four flags**, read-only ones included, where they are always
+`destructiveHint: false` and `idempotentHint: true`. The specification defines those two as
+meaningful only when a tool writes, so stating them on a read is redundant — but OpenAI's tool
+directory rejects any tool that leaves one out, and a client applying the defaults would read a missing
+`destructiveHint` as `true`. `handlerContract.test.ts` checks every handler tool states all four as
+booleans and that a read-only tool states those two values; `server.test.ts` checks the same four on
+the wire in `tools/list`, which is the only place `healthcheck` (defined in the server) is seen.
+[`docs/Tool-Reference.md`](./Tool-Reference.md) prints them under each tool, collapsing a read-only
+tool's flags to "read-only".
 
 ### 2.2 The execution layer — `BaseHandler`
 

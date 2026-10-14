@@ -333,17 +333,21 @@ describe('every tool declares its annotations', () => {
             // A title that only restates the name buys a UI nothing.
             expect(annotations!.title).not.toBe(tool.name);
 
+            // All four, on every tool. The specification calls destructiveHint and
+            // idempotentHint meaningful only when the tool writes, but OpenAI's
+            // directory rejects a tool that omits either, and leaving them out
+            // tells a client nothing it can use.
             expect(typeof annotations!.readOnlyHint).toBe('boolean');
+            expect(typeof annotations!.destructiveHint).toBe('boolean');
+            expect(typeof annotations!.idempotentHint).toBe('boolean');
             expect(typeof annotations!.openWorldHint).toBe('boolean');
 
             if (annotations!.readOnlyHint) {
-                // Both are defined by the specification as meaningful only when
-                // the tool writes. Stating them here would read as a claim.
-                expect(annotations!.destructiveHint).toBeUndefined();
-                expect(annotations!.idempotentHint).toBeUndefined();
-            } else {
-                expect(typeof annotations!.destructiveHint).toBe('boolean');
-                expect(typeof annotations!.idempotentHint).toBe('boolean');
+                // A tool that changes nothing cannot destroy anything, and running
+                // it twice leaves the system exactly as once did. Anything else is
+                // a typo.
+                expect(annotations!.destructiveHint).toBe(false);
+                expect(annotations!.idempotentHint).toBe(true);
             }
         }
     );

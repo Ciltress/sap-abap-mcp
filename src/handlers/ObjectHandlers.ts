@@ -24,6 +24,8 @@ export class ObjectHandlers extends BaseHandler {
                     annotations: {
                         title: 'Object metadata and links',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -57,6 +59,8 @@ export class ObjectHandlers extends BaseHandler {
                     annotations: {
                         title: 'Search objects',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -99,6 +103,8 @@ export class ObjectHandlers extends BaseHandler {
                     annotations: {
                         title: 'Read object by name',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -145,6 +151,8 @@ export class ObjectHandlers extends BaseHandler {
                     annotations: {
                         title: 'Search packages and contents',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -271,6 +279,8 @@ export class ObjectHandlers extends BaseHandler {
                     annotations: {
                         title: 'Package breadcrumb',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Package hierarchy (breadcrumb) leading to an object - where it lives in the repository tree.',
@@ -297,6 +307,8 @@ export class ObjectHandlers extends BaseHandler {
                     annotations: {
                         title: 'Known object types',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

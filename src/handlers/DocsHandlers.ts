@@ -33,6 +33,8 @@ export class DocsHandlers extends BaseHandler {
                     annotations: {
                         title: 'Read server guide',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

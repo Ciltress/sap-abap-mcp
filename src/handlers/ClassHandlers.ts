@@ -13,6 +13,8 @@ export class ClassHandlers extends BaseHandler {
                     annotations: {
                         title: 'Class includes',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -55,6 +57,8 @@ export class ClassHandlers extends BaseHandler {
                     annotations: {
                         title: 'Class components',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

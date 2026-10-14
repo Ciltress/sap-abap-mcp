@@ -10,6 +10,8 @@ export class ObjectRegistrationHandlers extends BaseHandler {
           annotations: {
             title: 'Namespace registration info',
             readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
             openWorldHint: false
           },
           description: 'Namespace / SSCR registration information for an ABAP object.',
@@ -32,6 +34,8 @@ export class ObjectRegistrationHandlers extends BaseHandler {
           annotations: {
             title: 'Validate new object',
             readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
             openWorldHint: false
           },
           description:

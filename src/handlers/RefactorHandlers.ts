@@ -10,6 +10,8 @@ export class RefactorHandlers extends BaseHandler {
                     annotations: {
                         title: 'Propose extract method',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -56,6 +58,8 @@ export class RefactorHandlers extends BaseHandler {
                     annotations: {
                         title: 'Preview extract method',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

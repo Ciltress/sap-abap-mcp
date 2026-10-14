@@ -320,6 +320,8 @@ export class JsonRemoteFunctionCallHandlers extends BaseHandler {
                 annotations: {
                     title: 'Read function module interface',
                     readOnlyHint: true,
+                    destructiveHint: false,
+                    idempotentHint: true,
                     openWorldHint: false
                 },
                 description:
@@ -436,6 +438,8 @@ export class JsonRemoteFunctionCallHandlers extends BaseHandler {
                 annotations: {
                     title: 'Probe JSON-RPC endpoint',
                     readOnlyHint: true,
+                    destructiveHint: false,
+                    idempotentHint: true,
                     openWorldHint: false
                 },
                 description:

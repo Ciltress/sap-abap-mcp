@@ -74,6 +74,8 @@ export class ServiceBindingHandlers extends BaseHandler {
                     annotations: {
                         title: 'Service binding details',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Service URLs and metadata of a binding. Use index to pick one of several services in it.',

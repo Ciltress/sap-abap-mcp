@@ -10,6 +10,8 @@ export class GitHandlers extends BaseHandler {
                     annotations: {
                         title: 'Linked abapGit repositories',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'List the abapGit repositories linked in this system. Start here: the GitRepo objects returned are what the other tools need, and GitRepo.key is the repoId.',
@@ -28,6 +30,8 @@ export class GitHandlers extends BaseHandler {
                     annotations: {
                         title: 'External repository info',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: true
                     },
                     description: 'Retrieves information about an external Git repository.',
@@ -193,6 +197,8 @@ export class GitHandlers extends BaseHandler {
                     annotations: {
                         title: 'Compute staging area',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: true
                     },
                     description: 'Compute the staging area for a repository. Returns GitStaging with staged/unstaged/ignored; move entries and set comment/author/committer, then pass it to pushRepo.',
@@ -267,6 +273,8 @@ export class GitHandlers extends BaseHandler {
                     annotations: {
                         title: 'Check repository',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: true
                     },
                     description: 'Consistency check of a linked repository - run it before a pull or push.',
@@ -301,6 +309,8 @@ export class GitHandlers extends BaseHandler {
                     annotations: {
                         title: 'Remote info (deprecated)',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: true
                     },
                     description:

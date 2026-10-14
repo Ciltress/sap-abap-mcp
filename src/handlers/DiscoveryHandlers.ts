@@ -10,6 +10,8 @@ export class DiscoveryHandlers extends BaseHandler {
                     annotations: {
                         title: 'ADT collections',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

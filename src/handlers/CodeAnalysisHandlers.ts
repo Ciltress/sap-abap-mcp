@@ -11,6 +11,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Syntax check source',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -77,6 +79,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Syntax check stored CDS',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -102,6 +106,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Code completion',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -134,6 +140,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Go to definition',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -175,6 +183,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Find references',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -201,6 +211,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Supported check types',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'List the syntax checker types this system supports, as checkType -> supported types.',
@@ -221,6 +233,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Expand completion pattern',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -279,6 +293,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Element information',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -311,6 +327,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Reference snippets',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -339,6 +357,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Quick-fix proposals',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Quick-fix candidates at a position. Feed one of them to fixEdits.',
@@ -364,6 +384,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Quick-fix edits',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -392,6 +414,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'Locate source fragment',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -419,6 +443,8 @@ export class CodeAnalysisHandlers extends BaseHandler {
                     annotations: {
                         title: 'ABAP keyword documentation',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

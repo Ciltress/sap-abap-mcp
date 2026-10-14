@@ -54,6 +54,8 @@ export class UnitTestHandlers extends BaseHandler {
                     annotations: {
                         title: 'Test class detail',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -93,6 +95,8 @@ export class UnitTestHandlers extends BaseHandler {
                     annotations: {
                         title: 'Test method markers',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

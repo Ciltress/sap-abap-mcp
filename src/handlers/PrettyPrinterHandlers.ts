@@ -10,6 +10,8 @@ export class PrettyPrinterHandlers extends BaseHandler {
                     annotations: {
                         title: 'Pretty printer settings',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Current pretty printer settings (indentation and casing style) of the logged-on user.',
@@ -59,6 +61,8 @@ export class PrettyPrinterHandlers extends BaseHandler {
                     annotations: {
                         title: 'Format source',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Format ABAP source server-side with the current settings and return it. Writes nothing - use setObjectSource to persist.',

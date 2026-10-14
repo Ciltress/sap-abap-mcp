@@ -10,6 +10,8 @@ export class FeedHandlers extends BaseHandler {
                     annotations: {
                         title: 'Available ADT feeds',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -30,6 +32,8 @@ export class FeedHandlers extends BaseHandler {
                     annotations: {
                         title: 'Short dumps (ST22)',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

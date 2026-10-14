@@ -31,6 +31,8 @@ export class SkillsHandlers extends BaseHandler {
                     annotations: {
                         title: 'Read bundled skill',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

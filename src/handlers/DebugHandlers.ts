@@ -10,6 +10,8 @@ export class DebugHandlers extends BaseHandler {
                     annotations: {
                         title: 'Check debug listener',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Check whether a debug listener is already active. Returns undefined when nobody is listening.',
@@ -376,6 +378,8 @@ export class DebugHandlers extends BaseHandler {
                     annotations: {
                         title: 'Debuggee call stack',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Call stack of the attached debuggee. semanticURIs:true returns ADT URIs you can feed to getObjectSource.',
@@ -400,6 +404,8 @@ export class DebugHandlers extends BaseHandler {
                     annotations: {
                         title: 'Read debuggee variables',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Read variables of the current stack frame by name. Use ["SY"] for the system fields.',
@@ -423,6 +429,8 @@ export class DebugHandlers extends BaseHandler {
                     annotations: {
                         title: 'Expand debuggee variable',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description: 'Expand a structure, internal table or object one level deeper.',

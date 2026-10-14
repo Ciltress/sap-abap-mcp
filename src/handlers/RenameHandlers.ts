@@ -10,6 +10,8 @@ export class RenameHandlers extends BaseHandler {
                     annotations: {
                         title: 'Propose rename',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:
@@ -54,6 +56,8 @@ export class RenameHandlers extends BaseHandler {
                     annotations: {
                         title: 'Preview rename',
                         readOnlyHint: true,
+                        destructiveHint: false,
+                        idempotentHint: true,
                         openWorldHint: false
                     },
                     description:

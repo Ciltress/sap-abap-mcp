@@ -94,13 +94,14 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
 - **Adding a tool is a one-file change.** Add a `ToolSpec` to `toolSpecs()`; `getTools()`, the router
   and `tools/list` are all derived from it, so a listed tool is always callable. A tool that belongs
   in a small profile is the exception — name it in [`src/lib/profiles.ts`](src/lib/profiles.ts) too.
-- **Every tool declares its `annotations`.** `title`, `readOnlyHint` and `openWorldHint` always;
-  `destructiveHint` and `idempotentHint` only when the tool writes, because the specification defines
-  them as meaningless otherwise. Omitting them is not neutral: a client then falls back to the
+- **Every tool declares its `annotations`: a `title` and all four hints, as booleans.** On a
+  read-only tool that means `destructiveHint: false, idempotentHint: true`. The specification
+  defines those two as meaningful only when a tool writes, but OpenAI's directory rejects a tool that
+  omits either. Omitting hints is not neutral either: a client then falls back to the
   defaults — not read-only, destructive, open-world — and treats a new search tool like
   `deleteObject`. The conventions each flag follows here are in
-  [§2.1.1 of `docs/MCP-Tools.md`](docs/MCP-Tools.md), and `handlerContract.test.ts` fails on a tool
-  that has none.
+  [§2.1.1 of `docs/MCP-Tools.md`](docs/MCP-Tools.md); `handlerContract.test.ts` fails on a tool
+  missing any of them, and `server.test.ts` checks the same on the wire in `tools/list`.
 - **Answers have a ceiling, enforced centrally.** `serializeResult()` is the single funnel every
   answer passes through, so [`src/lib/responseBudget.ts`](src/lib/responseBudget.ts) covers a tool
   added tomorrow without being told about it. Over-budget answers are replaced by valid JSON that
