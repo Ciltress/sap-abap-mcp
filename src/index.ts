@@ -24,7 +24,10 @@ import { AbapAdtServer } from './server.js';
 // and resolves the same way from dist/index.js as the old one did.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-config({ path: path.resolve(HERE, '../.env') });
+// quiet, because dotenv announces what it loaded, and up to 17.x it did so with
+// console.log — on stdout, ahead of the first protocol frame. 18 moved the line
+// to stderr; this keeps it off both rather than depending on which is installed.
+config({ path: path.resolve(HERE, '../.env'), quiet: true });
 
 export { AbapAdtServer } from './server.js';
 export type { ServerDependencies } from './server.js';
