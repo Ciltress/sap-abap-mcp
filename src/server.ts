@@ -763,6 +763,21 @@ export class AbapAdtServer extends Server {
    * retried once on a fresh session without any risk of applying it twice.
    */
   private isSessionExpired(error: unknown): boolean {
+    // BaseHandler hands the client an McpError and keeps the original as its
+    // `cause`; the original carries the type abap-adt-api uses to say "stale
+    // session", so every link of the chain is asked, not just the wrapper.
+    for (
+      let current: unknown = error, depth = 0;
+      current && depth < 5;
+      current = (current as { cause?: unknown }).cause, depth++
+    ) {
+      if (this.isStaleSessionError(current)) return true;
+    }
+    return false;
+  }
+
+  /** One error, without its causes. See isSessionExpired(). */
+  private isStaleSessionError(error: unknown): boolean {
     if (isCsrfError(error)) return true;
     if (isAdtException(error) && isLoginError(error)) return true;
     if (isAdtError(error) && (error.err === 401 || error.err === 403))

@@ -1,7 +1,7 @@
 import { vi, type MockInstance } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { adtException } from 'abap-adt-api';
+import { adtException, fromResponse } from 'abap-adt-api';
 import type { ADTClient } from 'abap-adt-api';
 import { AbapAdtServer } from '../server';
 import { fixedSessionSource } from '../session';
@@ -31,6 +31,10 @@ const BASE_ENV: NodeJS.ProcessEnv = {
     SAP_LANGUAGE: 'EN',
     ABAP_MCP_GATE: 'off'
 };
+
+/** A response SAP refused, as AdtHTTP hands it to fromResponse(). */
+const refused = (status: number, statusText: string): Parameters<typeof fromResponse>[1] =>
+    ({ status, statusText, headers: {}, body: '' }) as Parameters<typeof fromResponse>[1];
 
 /** Discovery documents shaped like the real one. */
 const discoveryWith = (...hrefs: string[]) => [
@@ -359,7 +363,15 @@ describe('session handling', () => {
     it.each([
         ['a CSRF rejection', adtException('CSRF token validation failed')],
         ['a plain CSRF message', new Error('CSRF token validation failed')],
-        ['a bare 401', new Error('Request failed with status code 401 Unauthorized')]
+        ['a bare 401', new Error('Request failed with status code 401 Unauthorized')],
+        // The three below are what AdtHTTP builds from a refused response. Only
+        // their types say "stale session" — no message pattern matches them — and
+        // BaseHandler wraps every failure in an McpError before the server sees
+        // it, so none of them was retried until the wrapper kept the original as
+        // its `cause`.
+        ['a 401 with no body', fromResponse('', refused(401, 'Unauthorized'))],
+        ['a CSRF rejection in another language', fromResponse('CSRF-Token-Validierung fehlgeschlagen', refused(403, 'Forbidden'))],
+        ['a 403 carrying SAP\'s own text', adtException('Zugriff verweigert', 403)]
     ])('re-establishes the session and retries once after %s', async (_label, error) => {
         // `loggedin` is only `csrfToken !== "fetch"`, so it stays true forever once
         // a token has been injected — even after SAP has dropped the session on its

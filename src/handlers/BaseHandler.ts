@@ -195,9 +195,16 @@ export abstract class BaseHandler {
       raw?.message ||
       'Unknown error';
 
-    return new McpError(
+    const wrapped = new McpError(
       ErrorCode.InternalError,
       onFailure ? `${onFailure}: ${detail}` : String(detail)
     );
+    // Kept, because the server still has to recognise what this was. A stale
+    // session is retried, and abap-adt-api marks one by *type* — an AdtHttpException
+    // with status 401, an AdtCsrfException — not by any message a pattern could
+    // match. Without the original, a 401 arriving as "Error 401:Unauthorized"
+    // was never retried.
+    (wrapped as { cause?: unknown }).cause = error;
+    return wrapped;
   }
 }
