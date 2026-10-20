@@ -1,0 +1,6 @@
+# SAP BTP service icons used by the btp-diagram-generator skill: assets, not content.
+skills/ABAP/skills/btp-diagram-generator/reference/svg/
+
+# mattpocock/skills, an unmodified upstream submodule: general engineering skills,
+# nothing this server's code or docs depend on. Its upstream is the source of truth.
+skills/Development/
