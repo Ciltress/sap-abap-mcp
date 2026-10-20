@@ -137,5 +137,7 @@ git add skills/Development && git commit
 
 Then re-check the tables above — upstream adds, renames and promotes skills out of `in-progress`.
 
-Discovery is filesystem-based and re-runs on every call, so an updated submodule is served
-immediately without rebuilding the server.
+Discovery is filesystem-based, so an updated submodule needs no rebuild. The list of skills is
+cached per process, though — `discoverSkills()` in [`src/lib/skills.ts`](../src/lib/skills.ts)
+memoises the walk — so a **running server must be restarted** before it offers a skill upstream
+added or renamed. A skill it already lists is read from disk on every call.

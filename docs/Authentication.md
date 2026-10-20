@@ -553,7 +553,7 @@ no such help — TLS client certificates are native — so it talks to SAP direc
    `x-csrf-token: fetch`, and harvests the session cookies and the token.
 5. `injectSsoSession()` puts them on the ADT client — shared with the Kerberos path.
 
-Session expiry is handled identically in both modes: the retry in `index.ts` re-runs whichever
+Session expiry is handled identically in both modes: the retry in `server.ts` re-runs whichever
 bootstrap applies, on a CSRF rejection or a 401.
 
 The code is [src/certauth.ts](../src/certauth.ts), tested in

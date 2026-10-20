@@ -117,7 +117,7 @@ export abstract class BaseHandler {
     return this.specIndex;
   }
 
-  /** The tools this handler exposes. Used to build both the tool list and the router. */
+  /** The tools this handler exposes. Used to build both the tool list and the routing table. */
   getTools(): ToolDefinition[] {
     return this.toolSpecs().map(spec => spec.definition);
   }

@@ -1,8 +1,8 @@
 # ABAP ADT MCP Server — Complete Tool Reference
 
 > **Audience:** humans *and* LLM agents driving this server.
-> **Source of truth:** the handler classes in [`src/handlers`](../src/handlers) and the router in
-> [`src/index.ts`](../src/index.ts). Every schema in this document was dumped from a running server
+> **Source of truth:** the handler classes in [`src/handlers`](../src/handlers) and the tool routing in
+> [`src/server.ts`](../src/server.ts). Every schema in this document was dumped from a running server
 > (`tools/list`) and every behavioural claim was checked against the `abap-adt-api` type declarations
 > or verified live against a real SAP system.
 
@@ -188,16 +188,16 @@ tool's flags to "read-only".
 
 | Member | What it does |
 | --- | --- |
-| `adtclient` | The one shared `ADTClient`, created in `index.ts`. |
+| `adtclient` | The one shared `ADTClient`, created in `server.ts`. |
 | `logger` | `createLogger(this.constructor.name)` — **all levels go to stderr**. |
 | `trackRequest(startTime, success)` | Counts requests/successes/errors and total time; logs at `info` on every call. |
 | `getMetrics()` | `{requestCount, errorCount, successCount, totalTime, averageTime}`. Public, and surfaced per handler by the `healthcheck` tool. |
-| `abstract getTools()` | The handler's tools. **Also builds the router** — see below. |
+| `abstract getTools()` | The handler's tools. **Also builds the routing table** — see below. |
 | `abstract handle(name, args)` | Executes one of them. Declared on the base class, so every handler is routable by construction. |
 
 ### 2.3 Request lifecycle
 
-[`src/index.ts`](../src/index.ts)
+[`src/server.ts`](../src/server.ts)
 
 ```
 tools/list  → handlers.flatMap(getTools()) + healthcheck
@@ -211,9 +211,9 @@ tools/call  → healthcheck?  → answer without establishing a session (pings S
             → on throw: handleError() → {content:[…], isError:true}
 ```
 
-The router is **derived from `getTools()`**, so a tool cannot be listed without being callable. A
+The routing table is **derived from `getTools()`**, so a tool cannot be listed without being callable. A
 duplicate name is refused at startup with a warning on stderr (first handler wins).
-`TOOL_ALIASES` in `index.ts` keeps renamed tools callable under their old name without listing them.
+`TOOL_ALIASES` in `server.ts` keeps renamed tools callable under their old name without listing them.
 
 ### 2.4 Authentication (never Basic)
 
@@ -308,7 +308,7 @@ the SKILL.md. Skills are **discovered from disk on every call**, so one added or
 without a rebuild. See [`ABAP-Skills.md`](./ABAP-Skills.md) and
 [`Development-Skills.md`](./Development-Skills.md).
 
-Both are wired in [`src/index.ts`](../src/index.ts) and share
+Both are wired in [`src/server.ts`](../src/server.ts) and share
 [`src/lib/guides.ts`](../src/lib/guides.ts), which owns the registry, the heading parser and the
 section extractor. **Adding a guide means adding one entry to `GUIDES`** — it then appears as both a
 resource and a tool topic. `guides.test.ts` reads the real files, so a guide that is renamed or moved
@@ -1097,7 +1097,7 @@ below are the ones it settles — they look identical from a tool call and have 
 | `debuggerSetBreakpoints` "succeeds" but nothing breaks | One entry came back as `DebugBreakpointError` | Inspect every element of the result array |
 | `callFunctionViaJsonRpc` → `-32601` | FM missing, not RFC-enabled, or `S_RFC` denied | `readAbapFunctionModule` to confirm it exists, then check `S_RFC` on the group |
 | `callFunctionViaJsonRpc` → non-JSON body / 404 | SICF node inactive or aliased | `checkJsonRpcEndpoint`; set `SAP_JSONRPC_PATH`; ask Basis to activate `/sap/gw/jsonrpc` |
-| `Unknown tool: X` | The name is not in the catalogue | `tools/list`; the router is derived from it, so anything listed is callable |
+| `Unknown tool: X` | The name is not in the catalogue | `tools/list`; the routing table is derived from it, so anything listed is callable |
 | Duplicate-tool warning on stderr at startup | Two handlers declare the same name | Rename one — the second is ignored |
 | MCP stream breaks / client reports protocol errors | Something wrote to **stdout** | Never `console.log`; use `this.logger` |
 | Generic `Internal server error` | A non-`McpError` escaped a handler | The message is now preserved; the stack is on stderr |
@@ -1129,7 +1129,7 @@ Every item below was a real defect; each is fixed in code and verified (type-che
 | `QueryHandlers` threw plain `Error` → client saw `Internal server error` | Throws `McpError`; and non-`McpError` messages are no longer replaced |
 | `BaseHandler.checkRateLimit` was dead code | Removed |
 | `getMetrics()` was unreachable | Public, and reported per handler by `healthcheck` |
-| A 200-line hand-maintained switch routed calls; a tool could be listed but not callable | The router is built from `getTools()`; duplicates are reported at startup |
+| A 200-line hand-maintained switch routed calls; a tool could be listed but not callable | The routing table is built from `getTools()`; duplicates are reported at startup |
 | `healthcheck` returned only `{status, timestamp}` | Adds session state, tool counts and per-handler metrics |
 | Only `parseFunctionInterface` had tests | A full suite — see [§9.3](#93-test-suites) |
 
@@ -1181,7 +1181,7 @@ deliberate design decisions:
 
 Adding a tool to an existing handler is now a **one-file** change:
 
-1. **Add it to `getTools()`** — the router is derived from that list, so no second registration exists
+1. **Add it to `getTools()`** — the routing table is derived from that list, so no second registration exists
    to forget:
 
    ```ts
@@ -1228,7 +1228,7 @@ Adding a tool to an existing handler is now a **one-file** change:
    it to `{}`.
 
 A brand-new **handler class** additionally needs: `extends BaseHandler` (which forces `getTools` and
-`handle`), an import and field in `index.ts`, and an entry in the `this.handlers` array — that array
+`handle`), an import and field in `server.ts`, and an entry in the `this.handlers` array — that array
 drives both `tools/list` and routing. Renaming a tool? Put the old name in `TOOL_ALIASES`.
 
 Then: `npx tsc --noEmit -p tsconfig.json`, `npx vitest run`, `npm run build`, and — since there is no

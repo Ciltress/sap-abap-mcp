@@ -28,7 +28,7 @@ it → call → unwrap.** Nothing is guessed; the signature comes from the syste
 
 Three pre-existing steps, none of them specific to JSON-RPC:
 
-1. [`src/index.ts`](../src/index.ts) — `ADTClient` is constructed with the literal placeholder password
+1. [`src/server.ts`](../src/server.ts) — `ADTClient` is constructed with the literal placeholder password
    `'unused-sso-placeholder'`, purely to satisfy the constructor's non-empty check. It is never sent.
 2. [`src/sso.ts`](../src/sso.ts) `bootstrapSsoSession()` — shells out to
    `C:\Windows\System32\curl.exe --negotiate -u :` against `/sap/bc/adt/compatibility/graph` and
@@ -242,9 +242,9 @@ because with a single member there is nothing else to report.
 | `parseFunctionInterface(source)` | pure, exported, unit-tested — parses the generated `*"` block |
 | `FmParameter`, `FunctionModuleMetadata`, `JsonRpcCallResult`, `JsonRpcCallSpec`, `JsonRpcBatchEntry`, `JsonRpcBatchResult`, `JsonRpcEndpointStatus`, `FmParameterKind`, `FmMetadataSource` | types |
 
-All four tools are wired into [`src/index.ts`](../src/index.ts): a field, construction with
+All four tools are wired into [`src/server.ts`](../src/server.ts): a field, construction with
 `() => this.ensureSsoSession()`, and an entry in the `this.handlers` array — which is what `tools/list`
-and the router are both built from, so there is no separate `case` list to keep in sync.
+and tool routing are both built from, so there is no separate `case` list to keep in sync.
 
 `JsonRpcCallResult.raw` / `JsonRpcBatchEntry.raw` always carry the untouched `result` member, so a
 wrong `output` mapping stays diagnosable.
@@ -257,7 +257,7 @@ so `describeAbapTable` reads the dictionary with `DDIF_FIELDINFO_GET` over JSON-
 
 The coupling is deliberately thin: `DdicHandlers` takes an injected `RfcCaller` function rather than a
 reference to this handler, so the two stay independent and `DdicHandlers` unit-tests with a stub.
-`index.ts` passes an arrow, which also means the construction order of the two handlers does not
+`server.ts` passes an arrow, which also means the construction order of the two handlers does not
 matter. **Anything else that needs RFC should be wired the same way.**
 
 ---
@@ -369,5 +369,5 @@ Additionally, by hand through the MCP client (§5 has the detail):
   stream — and `BaseHandler.trackRequest` logs at `info` on *every* request, so this affected every
   tool, not just these. All levels now go to stderr.
 - `ToolDefinition` could not express an array property's `items`; widened in `src/types/tools.ts`.
-- Double-wrapped tool responses: `index.ts serializeResult()` now passes a result through when it is
+- Double-wrapped tool responses: `server.ts serializeResult()` now passes a result through when it is
   already MCP-shaped (`{content:[…]}`), so clients see exactly one level of JSON.

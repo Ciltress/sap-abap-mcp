@@ -614,7 +614,7 @@ export class AbapAdtServer extends Server {
   }
 
   /**
-   * Derives the router from getTools(), so a tool can never be listed without
+   * Derives the routing table from getTools(), so a tool can never be listed without
    * being callable — which is what the hand-maintained switch used to allow.
    */
   /**

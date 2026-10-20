@@ -50,6 +50,8 @@ _Avoid_: filtering, feature flag, capability check
 The hand-written map from the words a person uses to the tool that does the job — "short dump" to
 `readShortDumps`, "who calls this" to `usageReferences`. An intent vocabulary, deliberately not
 generated, because the generated form can only ever restate the tools' own names back at the reader.
+Not the routing table in `server.ts`, which maps a tool name to its handler and is derived from
+`getTools()`.
 _Avoid_: index, glossary, table of contents, catalogue
 
 **System binding**:

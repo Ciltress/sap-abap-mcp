@@ -91,7 +91,7 @@ scripts/generate-tool-docs.mjs   writes docs/Tool-Reference.md; run after changi
     `InternalError` prefixed with the spec's `onFailure`, keeping SAP's detail when there is one.
   - The envelope is compact, never pretty-printed. Indentation costs response budget and buys a
     model nothing.
-- **Adding a tool is a one-file change.** Add a `ToolSpec` to `toolSpecs()`; `getTools()`, the router
+- **Adding a tool is a one-file change.** Add a `ToolSpec` to `toolSpecs()`; `getTools()`, tool routing
   and `tools/list` are all derived from it, so a listed tool is always callable. A tool that belongs
   in a small profile is the exception — name it in [`src/lib/profiles.ts`](src/lib/profiles.ts) too.
 - **Every tool declares its `annotations`: a `title` and all four hints, as booleans.** On a

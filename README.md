@@ -29,7 +29,7 @@ tools that would answer 400. On DEV that leaves 116.
 
 > This is the SSO fork of [`mcp-abap-abap-adt-api`](https://github.com/mario-andreschak/mcp-abap-abap-adt-api)
 > by mario-andreschak. The main differences: Kerberos SSO instead of Basic Auth, the JSON-RPC/RFC
-> tools, a router derived from the tool definitions, and a documented tool reference.
+> tools, tool routing derived from the tool definitions, and a documented tool reference.
 
 ---
 
@@ -44,7 +44,7 @@ tools that would answer 400. On DEV that leaves 116.
 | [`docs/ABAP-Skills.md`](docs/ABAP-Skills.md)               | The 20 SAP/ABAP skills and how they map onto these tools.                                                                                                                                                    |
 | [`docs/Development-Skills.md`](docs/Development-Skills.md) | The 35 bundled general engineering skills.                                                                                                                                                                   |
 | [`docs/JSON-RPC.md`](docs/JSON-RPC.md)                     | Design and protocol notes for the JSON-RPC / RFC tools, read from the ABAP source of `/IWBEP/CL_JSRPC_*`: the wire protocol, the LUW guarantee behind batches, and the traps.                                |
-| [`docs/Authentication.md`](docs/Authentication.md)         | The two password-less logon modes: Kerberos SSO, and X.509 certificates for service and technical users. What SAP needs configured, and why this is mutual TLS rather than SNC.                              |
+| [`docs/Authentication.md`](docs/Authentication.md)         | All four logon modes — Kerberos SSO, X.509 certificates, OAuth 2.0 and password — what SAP needs configured for each, and per-connection sessions over Streamable HTTP.                                      |
 
 ---
 
