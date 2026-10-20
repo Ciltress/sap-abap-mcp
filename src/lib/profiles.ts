@@ -37,7 +37,7 @@ const CORE_READ = [
 /**
  * The complete write cycle in one tool.
  *
- * It used to be four — lock, setObjectSource, activateByName, unLock — and
+ * It used to be four — lock, setObjectSource, unLock, activateByName — and
  * dropping any one of them left a profile that could start an edit it could not
  * finish. `editAbapSource` does the whole cycle and releases the lock on every
  * path, so the ordering, the lock handle and the obligation to unlock after a

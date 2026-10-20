@@ -77,7 +77,7 @@ export class ObjectRegistrationHandlers extends BaseHandler {
           },
           description:
             'Create a new, EMPTY ABAP object. Fill it afterwards with lock -> setObjectSource -> ' +
-            'activateByName -> unLock.',
+            'unLock -> activateByName.',
           inputSchema: {
             type: 'object',
             properties: {

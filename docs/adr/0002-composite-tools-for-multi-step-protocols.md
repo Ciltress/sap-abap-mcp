@@ -1,8 +1,8 @@
 # Composite tools where the protocol is the hard part
 
-`editAbapSource` was added: one tool that locks an object, writes its source, activates it and
-releases the lock, with the unlock in a `finally` so it runs on every path. The four steps —
-`lock`, `setObjectSource`, `activateByName`, `unLock` — stay, and `dev` and `all` still list them.
+`editAbapSource` was added: one tool that locks an object, writes its source, releases the lock
+and activates it, with the unlock in a `finally` so it runs on every path. The four steps —
+`lock`, `setObjectSource`, `unLock`, `activateByName` — stay, and `dev` and `all` still list them.
 `core` lists the composite instead, and drops from 11 tools to 8.
 
 [ADR-0001](0001-presentation-over-coverage.md) caps the tool set and says ADT's remaining surface is

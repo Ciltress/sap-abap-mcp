@@ -64,7 +64,7 @@ tools that would answer 400. On DEV that leaves 116.
 - **Object management** — search, read, create, modify, delete and activate ABAP objects.
 - **Survey a naming convention** — `searchPackages` finds packages by pattern (`["ZPP_*","Z_PP*"]`)
   and expands each into its objects grouped by type, in one call.
-- **Source workflow** — lock → edit → syntax check → activate → unlock, with transport handling.
+- **Source workflow** — lock → edit → syntax check → unlock → activate, with transport handling.
 - **Code intelligence** — completion, definitions, usage references, ABAP Doc, pretty printer, ATC,
   ABAP Unit, refactoring (rename, extract method).
 - **Call RFC function modules** — `callFunctionViaJsonRpc` executes an RFC-enabled function module and
@@ -179,7 +179,7 @@ so there is no point retrying. An unrecognised profile name stops the server at 
 falling back to `all` — silently serving 129 tools to something that asked for 9 is the exact failure
 profiles exist to prevent.
 
-`core` is small because one tool, `editAbapSource`, _is_ the write cycle: lock, write, activate, unlock,
+`core` is small because one tool, `editAbapSource`, _is_ the write cycle: lock, write, unlock, activate,
 releasing the lock even when a step fails. The four separate steps stay in `dev` and `all`.
 
 **`ABAP_MCP_MAX_RESPONSE_BYTES`** — the tool list is a fixed cost a profile can shrink; an answer is
@@ -550,7 +550,7 @@ changes are lost:
 }
 ```
 
-The full write cycle (lock → modify → check → activate → unlock), the debugger, ATC and every other
+The full write cycle (lock → modify → check → unlock → activate), the debugger, ATC and every other
 workflow are in [`docs/MCP-Tools.md` §4](docs/MCP-Tools.md#4-golden-paths).
 
 ---

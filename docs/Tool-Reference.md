@@ -475,7 +475,7 @@ _read-only_
 
 `patterns`**\*** array · `includeContents` boolean · `objectTypes` array · `maxPerPattern` number
 
-**`editAbapSource`** — Change the source of an ABAP object by NAME and activate it, in one call. Performs the whole cycle — lock, write, activate, unlock — and releases the lock on every path, including failure, so a failed edit cannot leave the object locked. This is a FULL REPLACE of the source: read it with readAbapObject first, edit the text, and send it complete. Prefer this over driving lock / setObjectSource / activateByName / unLock yourself; those remain for edits that need the steps apart. Check `activation.success` in the answer — a syntax error comes back as success:false with messages, not as an error.
+**`editAbapSource`** — Change the source of an ABAP object by NAME and activate it, in one call. Performs the whole cycle — lock, write, unlock, activate — and releases the lock on every path, including failure, so a failed edit cannot leave the object locked. This is a FULL REPLACE of the source: read it with readAbapObject first, edit the text, and send it complete. Prefer this over driving lock / setObjectSource / activateByName / unLock yourself; those remain for edits that need the steps apart. Check `activation.success` in the answer — a syntax error comes back as success:false with messages, not as an error.
 
 _writes · destructive_
 
@@ -515,7 +515,7 @@ _read-only_
 
 `options`**\*** object
 
-**`createObject`** — Create a new, EMPTY ABAP object. Fill it afterwards with lock -> setObjectSource -> activateByName -> unLock.
+**`createObject`** — Create a new, EMPTY ABAP object. Fill it afterwards with lock -> setObjectSource -> unLock -> activateByName.
 
 _writes_
 

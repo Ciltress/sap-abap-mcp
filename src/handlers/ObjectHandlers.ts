@@ -209,7 +209,7 @@ export class ObjectHandlers extends BaseHandler {
                     },
                     description:
                         'Change the source of an ABAP object by NAME and activate it, in one call. Performs the ' +
-                        'whole cycle — lock, write, activate, unlock — and releases the lock on every path, ' +
+                        'whole cycle — lock, write, unlock, activate — and releases the lock on every path, ' +
                         'including failure, so a failed edit cannot leave the object locked. This is a FULL ' +
                         'REPLACE of the source: read it with readAbapObject first, edit the text, and send it ' +
                         'complete. Prefer this over driving lock / setObjectSource / activateByName / unLock ' +

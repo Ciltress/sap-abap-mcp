@@ -508,7 +508,7 @@ it unless you need the steps apart.
 // 1. check it compiles before writing it
 {"tool":"syntaxCheckCode","args":{"url":"<sourceUrl>","code":"<new source>"}}
 
-// 2. lock, write, activate, unlock — one call
+// 2. lock, write, unlock, activate — one call
 {"tool":"editAbapSource","args":{"objectName":"ZCL_MY_CLASS","source":"<new source>"}}
 // → {written, activated, activation:{success,messages}, transport, local, unlocked}
 ```

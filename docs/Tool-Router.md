@@ -43,7 +43,7 @@ Workflows, URI rules and the error model: [`MCP-Tools.md`](./MCP-Tools.md).
 ## Changing code
 
 **Use `editAbapSource` unless you need the steps apart.** It does the whole cycle — lock, write,
-activate, unlock — from an object *name*, and releases the lock on every path including failure.
+unlock, activate — from an object *name*, and releases the lock on every path including failure.
 The four steps below are still there for edits that genuinely need them separated, and then the
 cycle is **`lock` → `setObjectSource` → `unLock` → `activateByName`**: a lock is bound to the
 session, so release it even when something fails — and release it *before* activating, because SAP
