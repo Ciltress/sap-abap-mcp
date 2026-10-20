@@ -348,7 +348,7 @@ CIS must be **outside the Subaccount but inside BTP** (identity services are pro
 1. Position CIS **below the Subaccount** but within the BTP boundary.
 2. Place CIS to the **left** side of BTP so vertical connectors from Integration Suite (right side) don't cross it.
 3. CIS container: **white fill** (`#ffffff`) with the **blue BTP border** (`#0070F2`) — the `card_inner` style every card inside BTP uses, alternating fill (BTP blue → CIS white).
-4. CIS → Subaccount: green dashed **bidirectional** OIDC trust connector. SAML 2.0 is NOT used for modern BTP trust — SAML only applies to upstream corporate IdP federation.
+4. CIS ↔ Subaccount: pink, solid, **bidirectional** trust connector (`arrow_trust`) — the subaccount trusts CIS over OIDC. Green is for authentication flows, not trust. SAML 2.0 is NOT used for modern BTP trust — SAML only applies to upstream corporate IdP federation.
 5. Show SCIM 2.0 (indigo `#5D36FF`) separately only when identity provisioning is requested.
 
 ### Application Clients presentation

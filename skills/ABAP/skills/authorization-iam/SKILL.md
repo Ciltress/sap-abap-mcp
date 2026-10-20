@@ -18,7 +18,7 @@ Guide for implementing authorization checks and identity/access management in AB
    - Understanding restriction types
 
 2. **Identify the platform**:
-   - ABAP Cloud (BTP or S/4HANA embedded) → IAM apps + business catalogs + `CL_ABAP_AUTHORIZATION`
+   - ABAP Cloud (BTP or S/4HANA embedded) → IAM apps + business catalogs + `AUTHORITY-CHECK`
    - On-premise / Standard ABAP → PFCG roles + `AUTHORITY-CHECK`
 
 3. **Guide implementation** with the appropriate authorization model
@@ -43,25 +43,13 @@ Authorization Fields + Permitted Values
 
 ## Authorization Checks in Code
 
-### ABAP Cloud — `CL_ABAP_AUTHORIZATION`
+### `AUTHORITY-CHECK` — ABAP Cloud and On-Premise
 
-```abap
-"Check authorization using released API
-DATA(lo_auth) = cl_abap_authorization=>check_authorization(
-  EXPORTING
-    authorization_object = 'Z_MY_AUTH'
-    authorizations       = VALUE #(
-      ( field = 'ACTVT' value = '03' )    "Display
-      ( field = 'ZCARR' value = lv_carrier )
-    ) ).
-
-IF lo_auth->is_authorized( ) = abap_false.
-  "User not authorized
-  RAISE EXCEPTION TYPE zcx_not_authorized.
-ENDIF.
-```
-
-### On-Premise — `AUTHORITY-CHECK`
+The same statement checks authorizations on both. ABAP for Cloud Development restricts it in two
+ways: the authorization object must be named as a literal, not passed in a data object, and only the
+current user can be checked — naming another user is a Standard ABAP addition. In ABAP Cloud, check a
+released authorization object or one created in ADT. There is no released class that replaces the
+statement; `CL_ABAP_AUTHORIZATION` does not appear in SAP's list of released objects.
 
 ```abap
 AUTHORITY-CHECK OBJECT 'Z_MY_AUTH'
@@ -69,8 +57,8 @@ AUTHORITY-CHECK OBJECT 'Z_MY_AUTH'
   ID 'ZCARR' FIELD lv_carrier.
 
 IF sy-subrc <> 0.
-  MESSAGE e001(z_msg) WITH lv_carrier.
-  RETURN.
+  "User not authorized
+  RAISE EXCEPTION TYPE zcx_not_authorized.
 ENDIF.
 ```
 
@@ -255,25 +243,28 @@ METHOD get_instance_authorizations.
     RESULT DATA(lt_travels).
 
   LOOP AT lt_travels INTO DATA(ls_travel).
-    DATA(lo_auth) = cl_abap_authorization=>check_authorization(
-      authorization_object = 'Z_MY_AUTH'
-      authorizations       = VALUE #(
-        ( field = 'ZCARR' value = ls_travel-carrier_id )
-        ( field = 'ACTVT' value = COND #(
-            WHEN requested_authorizations-%update = if_abap_behv=>mk-on
-              THEN '02'
-            WHEN requested_authorizations-%delete = if_abap_behv=>mk-on
-              THEN '06'
-            ELSE '03' ) )
-      ) ).
+    "Change ('02') and delete ('06') are separate activities: check each one requested
+    DATA(lv_update) = if_abap_behv=>auth-allowed.
+    IF requested_authorizations-%update = if_abap_behv=>mk-on.
+      AUTHORITY-CHECK OBJECT 'Z_MY_AUTH'
+        ID 'ZCARR' FIELD ls_travel-carrier_id
+        ID 'ACTVT' FIELD '02'.
+      lv_update = COND #( WHEN sy-subrc = 0 THEN if_abap_behv=>auth-allowed
+                          ELSE if_abap_behv=>auth-unauthorized ).
+    ENDIF.
 
-    APPEND VALUE #(
-      %tky = ls_travel-%tky
-      %update = COND #( WHEN lo_auth->is_authorized( ) THEN if_abap_behv=>auth-allowed
-                        ELSE if_abap_behv=>auth-unauthorized )
-      %delete = COND #( WHEN lo_auth->is_authorized( ) THEN if_abap_behv=>auth-allowed
-                        ELSE if_abap_behv=>auth-unauthorized )
-    ) TO result.
+    DATA(lv_delete) = if_abap_behv=>auth-allowed.
+    IF requested_authorizations-%delete = if_abap_behv=>mk-on.
+      AUTHORITY-CHECK OBJECT 'Z_MY_AUTH'
+        ID 'ZCARR' FIELD ls_travel-carrier_id
+        ID 'ACTVT' FIELD '06'.
+      lv_delete = COND #( WHEN sy-subrc = 0 THEN if_abap_behv=>auth-allowed
+                          ELSE if_abap_behv=>auth-unauthorized ).
+    ENDIF.
+
+    APPEND VALUE #( %tky    = ls_travel-%tky
+                    %update = lv_update
+                    %delete = lv_delete ) TO result.
   ENDLOOP.
 ENDMETHOD.
 ```
@@ -291,15 +282,13 @@ define behavior for ZR_Travel alias Travel
 
 ```abap
 METHOD get_global_authorizations.
-  DATA(lo_auth) = cl_abap_authorization=>check_authorization(
-    authorization_object = 'Z_MY_AUTH'
-    authorizations       = VALUE #(
-      ( field = 'ACTVT' value = '01' ) ) ).  "Create
-
-  IF lo_auth->is_authorized( ).
-    result-%create = if_abap_behv=>auth-allowed.
-  ELSE.
-    result-%create = if_abap_behv=>auth-unauthorized.
+  IF requested_authorizations-%create = if_abap_behv=>mk-on.
+    "No instance yet, so the carrier field cannot be known: DUMMY skips it
+    AUTHORITY-CHECK OBJECT 'Z_MY_AUTH'
+      ID 'ZCARR' DUMMY
+      ID 'ACTVT' FIELD '01'.  "Create
+    result-%create = COND #( WHEN sy-subrc = 0 THEN if_abap_behv=>auth-allowed
+                             ELSE if_abap_behv=>auth-unauthorized ).
   ENDIF.
 ENDMETHOD.
 ```
@@ -314,7 +303,7 @@ When helping with authorization/IAM topics, structure responses as:
 ### Platform
 
 - [ABAP Cloud / On-Premise]
-- Approach: [CDS DCL / AUTHORITY-CHECK / CL_ABAP_AUTHORIZATION / IAM]
+- Approach: [CDS DCL / AUTHORITY-CHECK / IAM]
 
 ### Implementation
 

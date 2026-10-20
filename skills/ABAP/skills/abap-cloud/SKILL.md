@@ -35,7 +35,8 @@ Guide for developing with the ABAP Cloud programming model, understanding the 3-
 - Only released SAP APIs (C1 contract) can be used
 - No direct database table access for SAP tables (use released CDS views instead)
 - No classic dynpro, selection screens, or SAP GUI-dependent statements
-- No `CALL TRANSACTION`, `SUBMIT`, `AUTHORITY-CHECK` (use `CL_ABAP_AUTHORIZATION` instead)
+- No `CALL TRANSACTION` or `SUBMIT`
+- `AUTHORITY-CHECK` is available, but the authorization object must be named as a literal and only the current user can be checked
 - No classic BAdIs or user exits
 - No `EXEC SQL` or native SQL (use ABAP SQL or AMDP)
 - No function modules (except released RFC-enabled ones)
@@ -44,6 +45,12 @@ Guide for developing with the ABAP Cloud programming model, understanding the 3-
 - Must use `if_oo_adt_classrun` for console output
 
 ## 3-Tier Extensibility Model
+
+> SAP has since retired this model in favour of **clean core levels A–D**, which rate an extension by
+> the riskiest technology it uses: A released APIs, B classic APIs, C internal objects, D not
+> recommended. Under the levels, an extension in standard ABAP may call a classic API such as a BAPI
+> directly (level B) where the tiers required a Tier 2 wrapper, and existing Tier 2 wrappers need not
+> be migrated. The tiers remain common vocabulary and still describe a great deal of existing code.
 
 ### Tier 1 — Cloud Development (ABAP Cloud)
 
@@ -103,7 +110,7 @@ ENDCLASS.
 
 ## Wrapper Pattern
 
-When a needed API is not released (Level B/C), create a wrapper in Tier 2 that exposes the functionality via a released interface consumable from Tier 1.
+When ABAP Cloud code needs an API that is not released (Level B/C), create a wrapper in Tier 2 that exposes the functionality via a released interface consumable from Tier 1.
 
 ### Wrapper Class Pattern
 
@@ -160,7 +167,6 @@ CALL FUNCTION 'Z_WRAPPER_FM'
 
 | Unreleased (Classic)        | Released Alternative (ABAP Cloud)                 |
 | --------------------------- | ------------------------------------------------- |
-| `AUTHORITY-CHECK`           | `CL_ABAP_AUTHORIZATION=>check_authorization()`    |
 | `sy-uname`                  | `cl_abap_context_info=>get_user_technical_name()` |
 | `sy-datum` / `sy-uzeit`     | `cl_abap_context_info=>get_system_date/time()`    |
 | `cl_gui_frontend_services`  | Not available — use Fiori UI instead              |
