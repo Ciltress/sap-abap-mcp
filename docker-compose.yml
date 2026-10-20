@@ -16,5 +16,5 @@ services:
       SAP_URL: https://your-sap-server.example.com:44301
       SAP_USER: "YOUR_SAP_USER"
       SAP_CLIENT: 100
-      ABAP_MCP_TRANSPORT: HTTP
+      ABAP_MCP_TRANSPORT: http
 

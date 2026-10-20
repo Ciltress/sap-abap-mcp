@@ -43,7 +43,11 @@ try {
 # ABAP_MCP_TRANSPORT=http and no SAP_CERT_FILE/SAP_OAUTH_*/SAP_PASSWORD set
 # would trip resolveAuthMode()'s kerberos default and fail on a missing
 # SAP_KRB_REALM it will never use.
-if [ "$mode" = "kerberos" ] && [ "${ABAP_MCP_TRANSPORT:-stdio}" != "http" ]; then
+#
+# Read by resolveTransportMode()'s rule - trimmed, any case - so `HTTP` here
+# means what it means to the server rather than falling through to kerberos.
+transport=$(printf '%s' "${ABAP_MCP_TRANSPORT:-stdio}" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+if [ "$mode" = "kerberos" ] && [ "$transport" != "http" ]; then
 
   # Node cannot do SPNEGO, so both the logon (src/sso.ts) and the two-layer probe
   # behind healthcheck (src/reachability.ts) shell out to curl. It has to be one
