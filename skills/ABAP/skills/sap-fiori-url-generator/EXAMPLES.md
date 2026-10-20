@@ -224,7 +224,7 @@ Generate training URLs for "Manage Workflows" in EN, DE, FR, and ES
 
 1. **Partial Matches**: You don't need to type the complete app name - partial matches work
 2. **Case Insensitive**: Search is case-insensitive ("maintenance" = "Maintenance" = "MAINTENANCE")
-3. **Default Client**: Client is always set to 100 (mandatory for this system)
+3. **No Default Client**: The client is system-specific and has no default — always pass it (`100` in these examples is a placeholder)
 4. **Multiple Matches**: If your search returns multiple apps, be more specific
 5. **App Not Found**: Try searching first to see available apps
 

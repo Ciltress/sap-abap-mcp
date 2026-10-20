@@ -347,7 +347,7 @@ CIS must be **outside the Subaccount but inside BTP** (identity services are pro
 
 1. Position CIS **below the Subaccount** but within the BTP boundary.
 2. Place CIS to the **left** side of BTP so vertical connectors from Integration Suite (right side) don't cross it.
-3. CIS container: **white fill** (`#ffffff`) with **grey border** (`#475E75`) — alternating fill pattern (BTP blue → CIS white).
+3. CIS container: **white fill** (`#ffffff`) with the **blue BTP border** (`#0070F2`) — the `card_inner` style every card inside BTP uses, alternating fill (BTP blue → CIS white).
 4. CIS → Subaccount: green dashed **bidirectional** OIDC trust connector. SAML 2.0 is NOT used for modern BTP trust — SAML only applies to upstream corporate IdP federation.
 5. Show SCIM 2.0 (indigo `#5D36FF`) separately only when identity provisioning is requested.
 
@@ -366,9 +366,9 @@ Always alternate fill when nesting: `blue → white → blue → white`.
 
 ```
 L0: BTP Platform   (border #0070F2, fill #EBF8FF)
-  L1: Subaccount   (border #475E75, fill #ffffff)
+  L1: Subaccount   (border #0070F2, fill #ffffff)
     L2: Service group (border #0070F2, fill #EBF8FF)
-  L1: CIS          (border #475E75, fill #ffffff)
+  L1: CIS          (border #0070F2, fill #ffffff)
 ```
 
 A direct child of a blue-filled container MUST have white fill (not blue-on-blue).

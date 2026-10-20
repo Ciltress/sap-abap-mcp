@@ -17,9 +17,9 @@ Guide for developing with the ABAP Cloud programming model, understanding the 3-
    - Setting up clean core-compliant development
 
 2. **Identify the extensibility tier**:
-   - Tier 1: Key user extensibility (no code)
-   - Tier 2: Developer extensibility (ABAP Cloud / ABAP for Cloud Development)
-   - Tier 3: Classic extensibility (standard ABAP, only on-premise/private cloud)
+   - Tier 1: Cloud development — key user and developer extensibility on released APIs (ABAP Cloud / ABAP for Cloud Development)
+   - Tier 2: Cloud API enablement — standard ABAP wrappers that release a missing API for Tier 1
+   - Tier 3: Classic ABAP development (standard ABAP, only on-premise/private cloud)
 
 3. **Guide implementation** using clean core principles
 
@@ -45,7 +45,12 @@ Guide for developing with the ABAP Cloud programming model, understanding the 3-
 
 ## 3-Tier Extensibility Model
 
-### Tier 1 — Key User Extensibility (No Code)
+### Tier 1 — Cloud Development (ABAP Cloud)
+
+The default for every new extension. Key user and developer extensibility both sit here: they differ
+in who builds the extension, not in what it may use — both are limited to released APIs.
+
+**Key user extensibility (no code)**
 
 - Custom fields and logic via SAP Fiori UIs
 - Custom CDS views (basic)
@@ -53,7 +58,7 @@ Guide for developing with the ABAP Cloud programming model, understanding the 3-
 - Custom analytical queries
 - No ABAP development required
 
-### Tier 2 — Developer Extensibility (ABAP Cloud)
+**Developer extensibility**
 
 - ABAP for Cloud Development language version
 - Only released APIs with stability contracts
@@ -62,7 +67,7 @@ Guide for developing with the ABAP Cloud programming model, understanding the 3-
 - Full lifecycle management via ADT
 
 ```abap
-"Example: Tier 2 class using only released APIs
+"Example: Tier 1 class using only released APIs
 CLASS zcl_my_extension DEFINITION
   PUBLIC FINAL CREATE PUBLIC.
   PUBLIC SECTION.
@@ -81,7 +86,14 @@ CLASS zcl_my_extension IMPLEMENTATION.
 ENDCLASS.
 ```
 
-### Tier 3 — Classic Extensibility (Standard ABAP)
+### Tier 2 — Cloud API Enablement (Wrappers)
+
+- Standard ABAP language version
+- Wraps an unreleased API behind a custom interface, released with a C1 contract for Tier 1 to consume
+- Only where SAP offers no released successor; retire the wrapper once one appears
+- Only available on-premise or private cloud
+
+### Tier 3 — Classic ABAP Development (Standard ABAP)
 
 - Full ABAP language scope
 - Access to all repository objects
@@ -91,13 +103,13 @@ ENDCLASS.
 
 ## Wrapper Pattern
 
-When a needed API is not released (Level B/C), create a wrapper in Tier 3 that exposes the functionality via a released interface consumable from Tier 2.
+When a needed API is not released (Level B/C), create a wrapper in Tier 2 that exposes the functionality via a released interface consumable from Tier 1.
 
 ### Wrapper Class Pattern
 
 ```abap
-"Tier 3: Wrapper class (Standard ABAP language version)
-"Released with C1 contract for use from Tier 2
+"Tier 2: Wrapper class (Standard ABAP language version)
+"Released with C1 contract for use from Tier 1
 CLASS zcl_wrapper_material DEFINITION
   PUBLIC FINAL CREATE PUBLIC.
   PUBLIC SECTION.
@@ -120,10 +132,10 @@ CLASS zcl_wrapper_material IMPLEMENTATION.
 ENDCLASS.
 ```
 
-### Wrapper via RFC Proxy (Remote Tier 2 to Tier 3)
+### Wrapper via RFC Proxy (Remote Tier 1 Consumer, Tier 2 Proxy)
 
 ```abap
-"Tier 2 consumer calls released RFC wrapper
+"Tier 1 consumer calls released RFC wrapper
 DATA(lo_dest) = cl_rfc_destination_provider=>create_by_comm_arrangement(
   comm_scenario  = 'Z_MY_COMM_SCENARIO'
   service_id     = 'Z_MY_OUTBOUND_SRV' ).

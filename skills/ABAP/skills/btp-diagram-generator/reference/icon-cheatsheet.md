@@ -92,15 +92,24 @@ For SAP non-BTP products (S/4HANA Cloud, SuccessFactors, Ariba, …) the SAP rep
 
 For end users / personas, fall back to the built-in actor: `shape=actor;html=1;`.
 
-## Connector styles (these are real)
+## Connector styles (as `btp_builder` emits them)
 
-| Purpose | Style |
-|---|---|
-| L0 neutral link | `endArrow=none;html=1;strokeColor=#475E75;strokeWidth=1.5;` |
-| L1/L2 directional | `endArrow=classicThin;html=1;rounded=0;strokeColor=#475E75;fontSize=10;fontColor=#1D2D3E;` |
-| Async / event | `endArrow=classicThin;dashed=1;dashPattern=4 4;strokeColor=#5D36FF;` |
-| Error / failure path | `endArrow=classicThin;strokeColor=#D20A0A;` |
-| Bidirectional sync | `startArrow=classicThin;endArrow=classicThin;` |
+These are the named styles in [styles.json](styles.json), which `scripts/btp_builder` uses. Each one
+starts with `edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;` and ends
+with `endSize=4;startSize=4;strokeWidth=1.5;` — the middle is what tells them apart. Line style
+encodes the flow's nature and color its meaning; SKILL.md §3 explains which to use when.
+
+| Purpose | `styles.json` key | Distinguishing part |
+|---|---|---|
+| L0 neutral link | `arrow_l0_neutral` | `endArrow=block;endFill=1;strokeColor=#475E75;` |
+| L1/L2 directional | `arrow_std` | `endArrow=blockThin;endFill=1;strokeColor=#475E75;` |
+| Bidirectional sync | `arrow_dblhd` | `endArrow=blockThin;startArrow=blockThin;endFill=1;startFill=1;strokeColor=#475E75;` |
+| Async / indirect | `arrow_dashed` | `endArrow=blockThin;endFill=1;dashed=1;strokeColor=#475E75;` |
+| Optional | `arrow_optional` | `endArrow=blockThin;endFill=1;dashed=1;dashPattern=1 4;strokeColor=#475E75;` |
+| Authentication | `arrow_auth` | `endArrow=blockThin;endFill=1;strokeColor=#188918;` |
+| Authorization / provisioning (SCIM) | `arrow_scim` | `endArrow=blockThin;endFill=1;strokeColor=#5D36FF;` |
+| Mutual trust | `arrow_trust` | `endArrow=blockThin;startArrow=blockThin;endFill=1;startFill=1;strokeColor=#CC00DC;` |
+| Error / failure path | — (none) | `arrow_std` with `strokeColor=#D20A0A;` |
 
 ## Why labels can look invisible
 
