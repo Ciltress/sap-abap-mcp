@@ -75,7 +75,7 @@ tools that would answer 400. On DEV that leaves 116.
 - **See the running system** — `listLoggedOnUsers` answers "who is logged on" from `TH_USER_LIST`, the
   data behind `SM04`; `readProfileParameters` reads RZ11 values in one round trip; and
   `checkLogonConfiguration` says which authentication the system actually accepts.
-- **Bundled agent skills** — 54 skills under [`skills/`](skills), for ABAP (Clean ABAP, RAP, CDS, ATC,
+- **Bundled agent skills** — 58 skills under [`skills/`](skills), for ABAP (Clean ABAP, RAP, CDS, ATC,
   abapGit…) and general engineering (TDD, code review, diagnosing bugs), served as resources and via
   `readSkill`.
 - **Self-documenting** — the guides below are served by the server itself, as MCP resources
