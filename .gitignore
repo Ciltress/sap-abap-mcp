@@ -32,4 +32,3 @@ graphify-out/.graphify_analysis.json
 graphify-out/manifest.json
 # graphify rebuilds its report and HTML view from graph.json.
 graphify-out/GRAPH_REPORT.md
-graphify-out/graph.html
