@@ -1,0 +1,5 @@
+root = true
+
+# Match .gitattributes: LF everywhere, so files are the same bytes on every machine.
+[*]
+end_of_line = lf

@@ -1,5 +1,8 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Auto detect text files, store them as LF, and check them out as LF on every
+# platform whatever core.autocrlf says. graphify keys its committed extraction
+# cache on a file's exact bytes, so a CRLF checkout would miss the cache for
+# every file and re-extract it.
+* text=auto eol=lf
 
 # Anything that runs inside the Linux image keeps LF whatever the host does.
 # A CRLF checkout of docker-entrypoint.sh turns its shebang into `/bin/sh\r`,
