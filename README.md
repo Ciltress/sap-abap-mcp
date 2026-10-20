@@ -42,7 +42,7 @@ tools that would answer 400. On DEV that leaves 116.
 | [`docs/Tool-Reference.md`](docs/Tool-Reference.md)         | All 128 tools with their arguments, grouped by family. Generated from the tool definitions, so it cannot drift from the code.                                                                                |
 | [`docs/MCP-Tools.md`](docs/MCP-Tools.md)                   | **How the server behaves.** The profiles, golden-path workflows, ADT URI and lock semantics, the response/error model, and a troubleshooting matrix. Written for humans _and_ for agents driving the server. |
 | [`docs/ABAP-Skills.md`](docs/ABAP-Skills.md)               | The 20 SAP/ABAP skills and how they map onto these tools.                                                                                                                                                    |
-| [`docs/Development-Skills.md`](docs/Development-Skills.md) | The 35 bundled general engineering skills.                                                                                                                                                                   |
+| [`docs/Development-Skills.md`](docs/Development-Skills.md) | The 38 bundled general engineering skills.                                                                                                                                                                   |
 | [`docs/JSON-RPC.md`](docs/JSON-RPC.md)                     | Design and protocol notes for the JSON-RPC / RFC tools, read from the ABAP source of `/IWBEP/CL_JSRPC_*`: the wire protocol, the LUW guarantee behind batches, and the traps.                                |
 | [`docs/Authentication.md`](docs/Authentication.md)         | All four logon modes — Kerberos SSO, X.509 certificates, OAuth 2.0 and password — what SAP needs configured for each, and per-connection sessions over Streamable HTTP.                                      |
 
@@ -112,7 +112,7 @@ npm run build
 ```
 
 > `--recurse-submodules` matters: the general engineering skills live in a submodule, and without it
-> that directory is empty and the server offers 35 fewer skills. Already cloned? Run
+> that directory is empty and the server offers 38 fewer skills. Already cloned? Run
 > `git submodule update --init --recursive`.
 
 > The `npx mcp-abap-abap-adt-api` package on npm is the **upstream** server and does _not_ include the
@@ -388,7 +388,7 @@ Three things to know before you reach for it:
   desktop `.env` in wholesale hides this instead: `NODE_TLS_REJECT_UNAUTHORIZED=0` is a development
   setting and has no business in a deployed image.
 - **Build from a `--recurse-submodules` clone.** `skills/Development` is a submodule; without it the
-  image ships 35 fewer skills.
+  image ships 38 fewer skills.
 
 The image is Debian rather than Alpine for one reason: Alpine's curl is built without GSS-API, and
 such a curl does not fail — it simply never sends a token, and SAP answers the same 401 an expired

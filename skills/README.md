@@ -16,7 +16,7 @@ The two collections are tracked differently, because we treat them differently.
 | Collection | Upstream | Tracked as | Skills |
 | --- | --- | --- | --- |
 | [`ABAP`](ABAP) | [likweitan/abap-skills](https://github.com/likweitan/abap-skills) | **vendored** from `eccc4d0`, maintained here | 20 (18 upstream + `basis` + `abap-analyze-modification`) |
-| [`Development`](Development) | [mattpocock/skills](https://github.com/mattpocock/skills) | **git submodule**, pinned at `068b6e0` | 35 |
+| [`Development`](Development) | [mattpocock/skills](https://github.com/mattpocock/skills) | **git submodule**, pinned at `5beb35b` | 38 |
 
 **ABAP is vendored** because ten of its skills are modified to use this server's tools, so it is ours
 now. The upstream history is not preserved; the commit above is recorded for attribution and so a
@@ -31,7 +31,7 @@ must stay with the files.
 ### Cloning
 
 `skills/Development` is a submodule, so a plain `git clone` leaves it **empty** and the server offers
-35 fewer skills. Either clone with submodules:
+38 fewer skills. Either clone with submodules:
 
 ```bash
 git clone --recurse-submodules https://github.com/Ciltress/sap-abap-mcp.git

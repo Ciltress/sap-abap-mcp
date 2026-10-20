@@ -82,7 +82,7 @@ export const GUIDES: readonly GuideDefinition[] = [
         title: 'Development skills',
         file: 'docs/Development-Skills.md',
         description:
-            'The 35 bundled general engineering skills (TDD, code review, diagnosing bugs, domain ' +
+            'The 38 bundled general engineering skills (TDD, code review, diagnosing bugs, domain ' +
             'modelling, writing for agents), which are user-invoked, and which fit this repository.'
     },
     {

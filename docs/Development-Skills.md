@@ -18,25 +18,26 @@ The server serves every skill two ways, both from the files on disk:
   user-attached, so this is the route that works mid-task.
 
 ```jsonc
-{"tool":"readSkill","args":{}}                                  // ~1.3 kB index of both collections
-{"tool":"readSkill","args":{"collection":"development"}}        // ~11 kB, all 35 with descriptions
+{"tool":"readSkill","args":{}}                                  // ~1.6 kB index of both collections
+{"tool":"readSkill","args":{"collection":"development"}}        // ~12.5 kB, all 38 with descriptions
 {"tool":"readSkill","args":{"skill":"tdd"}}                     // the SKILL.md
 {"tool":"readSkill","args":{"skill":"tdd","file":"mocking.md"}} // a supporting file
 ```
 
 Reading is a drill-down on purpose: the descriptions are what make a skill findable and they are long,
-so listing all 53 skills with theirs costs ~19 kB. Start with the index.
+so listing all 58 skills with theirs costs ~19 kB. Start with the index.
 
 ## What is here
 
-**35 skills in 4 categories.** Twenty of them are marked `disable-model-invocation: true` upstream —
-meaning they are meant to be *invoked by the user*, not chosen autonomously by an agent. They are
-marked **user-invoked** below. The rest an agent may reach for on its own.
+**38 skills in 4 categories.** Twenty-three of them are marked `disable-model-invocation: true`
+upstream — meaning they are meant to be *invoked by the user*, not chosen autonomously by an agent.
+They are marked **user-invoked** below. The rest an agent may reach for on its own.
 
 Each skill is a directory with a `SKILL.md`; some carry supporting files, listed in the `files` field
-of the `readSkill` response and readable with the `file` argument.
+of the `readSkill` response and readable with the `file` argument. Every skill also carries
+`agents/openai.yaml`, upstream's display name and one-line summary for it, so `files` is never empty.
 
-### engineering — 18 skills
+### engineering — 20 skills
 
 The core loop: plan, implement, test, review.
 
@@ -44,26 +45,29 @@ The core loop: plan, implement, test, review.
 | --- | --- | --- |
 | `tdd` | | Test-driven development: what a good test is, where tests go, the anti-patterns, and the rules of the red→green loop. Supporting: `tests.md`, `mocking.md`. |
 | `code-review` | | Reviews the diff since a fixed point along two axes — **Standards** (does it follow the repo's documented conventions?) and **Spec** (does it do what was asked?) — in parallel sub-agents, reported side by side. |
-| `diagnosing-bugs` | | A diagnosis loop for hard bugs and performance regressions. Reach for it when something is broken, throwing or slow rather than guessing at fixes. |
+| `diagnosing-bugs` | | A diagnosis loop for hard bugs and performance regressions. Reach for it when something is broken, throwing or slow rather than guessing at fixes. Supporting: `scripts/hitl-loop.template.sh`. |
 | `codebase-design` | | Vocabulary for designing *deep modules* — narrow interface, substantial implementation. Supporting: `DEEPENING.md`, `DESIGN-IT-TWICE.md`. |
-| `domain-modeling` | | Builds and sharpens a project's domain model; writes `CONTEXT.md` and ADRs. Supporting: `ADR-FORMAT.md`, `CONTEXT-FORMAT.md`. |
+| `domain-modeling` | | Builds and sharpens a project's domain model; writes `GLOSSARY.md` and ADRs. Supporting: `ADR-FORMAT.md`, `GLOSSARY-FORMAT.md`. |
 | `prototype` | | Throwaway prototypes to answer a design question about a state model, logic, or UI. Supporting: `LOGIC.md`, `UI.md`. |
 | `research` | | Investigates a question against high-trust primary sources and captures the findings as markdown in the repo. |
-| `resolving-merge-conflicts` | | Working through an in-progress merge or rebase conflict. |
+| `pr` | | Writes a PR body to one template: a summary as a diagram, diff sketch or tree; before-and-after evidence; and the merge danger — one-way or two-way door, and blast radius. |
 | `wizard` | | Generates an interactive bash wizard for steps only a human can do — dashboards, credentials, cutovers. Supporting: `template.sh`. |
 | `ask-matt` | user-invoked | A router: asks which skill or flow fits your situation. Supporting: `PHASE-BOUNDARIES.md`. |
 | `implement` | user-invoked | Implements a piece of work from a spec or a set of tickets. |
+| `implement-spec` | user-invoked | Implements a `to-spec` spec and its `to-tickets` tickets on one integration branch: parallel sub-agents take the tickets that are ready, each with `tdd` in its own worktree, and `code-review` runs at the end. |
 | `to-spec` | user-invoked | Turns the current conversation into a spec on the issue tracker — synthesis, no interview. |
 | `to-tickets` | user-invoked | Breaks a plan into tracer-bullet tickets with their blocking edges. |
-| `triage` | user-invoked | Moves issues and external PRs through a triage state machine and writes agent-ready briefs. |
+| `triage` | user-invoked | Moves issues and external PRs through a triage state machine and writes agent-ready briefs. Supporting: `AGENT-BRIEF.md`, `OUT-OF-SCOPE.md`. |
 | `wayfinder` | user-invoked | Plans work too big for one agent session as a map of decision tickets, resolved one at a time. |
 | `grill-with-docs` | user-invoked | A relentless design interview that produces ADRs and a glossary as it goes. |
 | `improve-codebase-architecture` | user-invoked | Scans for deepening opportunities and reports them as HTML. Supporting: `HTML-REPORT.md`. |
-| `setup-matt-pocock-skills` | user-invoked | One-time setup: issue tracker, triage labels, domain doc layout. **Run before the tracker-based skills above.** |
+| `retro` | user-invoked | A retrospective on a coding session: proposes changes to the agent's environment — navigation pointers, automated checks, review rules, tool economy — most severe first. |
+| `setup-matt-pocock-skills` | user-invoked | One-time setup: issue tracker, triage labels, domain doc layout. **Run before the tracker-based skills above.** Supporting: a guide per tracker (GitHub, GitLab, local), `triage-labels.md`, `domain.md`. |
 
 ### productivity — 7 skills
 
-Conversation-shaping rather than code-shaping. All but `writing-for-agents` are user-invoked.
+Conversation-shaping rather than code-shaping. All but `writing-for-agents` and `grilling` are
+user-invoked.
 
 | Skill | | What it is for |
 | --- | --- | --- |
@@ -86,12 +90,12 @@ Setup and migration one-offs, all agent-invokable.
 | `migrate-to-shoehorn` | Replaces `as` type assertions in tests with `@total-typescript/shoehorn`. |
 | `scaffold-exercises` | Creates exercise directory structures that pass linting. |
 
-### in-progress — 6 skills
+### in-progress — 7 skills
 
 Upstream's own work in progress. All user-invoked; treat them as unstable.
 
-`claude-handoff`, `loop-me`, `setup-ts-deep-modules`, `writing-beats`, `writing-fragments`,
-`writing-shape`.
+`chief-of-staff`, `claude-handoff`, `loop-me`, `setup-ts-deep-modules`, `writing-beats`,
+`writing-fragments`, `writing-shape`.
 
 ## Which of these fit this repository
 
@@ -110,18 +114,18 @@ process skills apply directly:
   injected `RfcCaller` rather than a reference to `JsonRemoteFunctionCallHandlers` is exactly the
   seam this skill argues for.
 
-The tracker-based skills (`to-tickets`, `triage`, `wayfinder`, `to-spec`) need
+The tracker-based skills (`to-tickets`, `triage`, `wayfinder`, `to-spec`, `implement-spec`) need
 `setup-matt-pocock-skills` run first, since they expect a configured issue tracker.
 
 ## Tracking upstream
 
 `skills/Development` is a **git submodule** pinned at
-[`068b6e0`](https://github.com/mattpocock/skills), not a copy. That is deliberate: we do not modify
+[`5beb35b`](https://github.com/mattpocock/skills), not a copy. That is deliberate: we do not modify
 these skills, so upstream stays the source of truth.
 
 Two consequences:
 
-- **A plain `git clone` leaves the directory empty**, and the server then offers 35 fewer skills.
+- **A plain `git clone` leaves the directory empty**, and the server then offers 38 fewer skills.
   Clone with `--recurse-submodules`, or run `git submodule update --init --recursive` afterwards.
 - **Do not edit these files.** Changes here are changes to someone else's repository: they will not be
   recorded by this project and will be lost on the next update. Contribute upstream, or copy the skill
@@ -135,7 +139,8 @@ git submodule update --remote skills/Development
 git add skills/Development && git commit
 ```
 
-Then re-check the tables above — upstream adds, renames and promotes skills out of `in-progress`.
+Then re-check the tables above — upstream adds, renames and promotes skills out of `in-progress`, and
+removes some: `resolving-merge-conflicts` went in v1.3.0, archived in upstream's `docs/engineering/`.
 
 Discovery is filesystem-based, so an updated submodule needs no rebuild. The list of skills is
 cached per process, though — `discoverSkills()` in [`src/lib/skills.ts`](../src/lib/skills.ts)
