@@ -66,7 +66,7 @@ function makeAdtClient(options: FakeOptions = {}) {
     let discoveryCount = 0;
     let remaining = options.failWith?.times ?? 0;
 
-    const state = { loggedin: false, csrfToken: 'fetch', cookie: new Map<string, string>() };
+    const state = { loggedin: false, csrfToken: 'fetch', session: { importCookies: () => {} } };
 
     const client = new Proxy({} as any, {
         get(_target, property: string) {

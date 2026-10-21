@@ -36,7 +36,7 @@ function makeAdtClient(): ADTClient {
   const state = {
     loggedin: false,
     csrfToken: 'fetch',
-    cookie: new Map<string, string>(),
+    session: { importCookies: () => {} },
   };
   return new Proxy({} as any, {
     get(_target, property: string) {

@@ -1,3 +1,4 @@
+import { ADTClient } from 'abap-adt-api';
 import { SsoBootstrapError, injectSsoSession, interpretSsoResponse } from '../sso';
 
 /**
@@ -141,14 +142,18 @@ describe('interpretSsoResponse', () => {
 describe('injectSsoSession', () => {
     it('replaces the cookie jar and sets the token, so AdtHTTP never calls login()', () => {
         // loggedin is `csrfToken !== "fetch"`, so setting the token is what stops
-        // AdtHTTP from logging in with the placeholder password.
-        const httpClient = { cookie: new Map<string, string>([['stale', 'stale=1']]), csrfToken: 'fetch' };
+        // AdtHTTP from logging in with the placeholder password. A real client, not
+        // a fake, because this leans on abap-adt-api's session handling.
+        const adtClient = new ADTClient('https://sap.example', 'TESTUSER', 'unused-sso-placeholder', '100', 'EN');
+        const http = adtClient.httpClient;
+        http.session.importCookies({ cookieHeader: 'stale=1' });
         const session = interpretSsoResponse(OK);
 
-        injectSsoSession({ httpClient }, session);
+        injectSsoSession(adtClient, session);
 
-        expect(httpClient.csrfToken).toBe('aVerySecretToken==');
-        expect(httpClient.cookie.has('stale')).toBe(false);
-        expect(httpClient.cookie.get('SAP_SESSIONID_DEV_100')).toBe('SAP_SESSIONID_DEV_100=abc123def456');
+        expect(http.loggedin).toBe(true);
+        expect(http.csrfToken).toBe('aVerySecretToken==');
+        expect(http.session.cookieHeader())
+            .toBe('sap-usercontext=sap-client=100; SAP_SESSIONID_DEV_100=abc123def456');
     });
 });

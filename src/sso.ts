@@ -1,6 +1,7 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { URLSearchParams } from "url";
+import type { AdtHTTP } from "abap-adt-api";
 
 const execFileAsync = promisify(execFile);
 const DEVNULL = process.platform === "win32" ? "NUL" : "/dev/null";
@@ -156,18 +157,18 @@ export function interpretSsoResponse(stdout: string): SsoSession {
  * AdtHTTP instance, bypassing Basic Auth entirely for all subsequent
  * requests.
  *
- * `cookie` is declared `private` in AdtHTTP's TypeScript source, but TS
- * privacy is not enforced at runtime — it's a real, mutable Map on the
- * compiled JS object. `csrfToken` is a public getter/setter (backed by
- * commonHeaders['x-csrf-token']), so setting it here also flips
- * AdtHTTP.loggedin to true (loggedin = csrfToken !== "fetch"), which
- * prevents AdtHTTP.request() from calling login() (and thus from ever
+ * `session` is AdtHTTP's cookie jar (public since abap-adt-api 9); `replace`
+ * drops whatever an earlier session left behind. `csrfToken` is a public
+ * getter/setter (backed by commonHeaders['x-csrf-token']), so setting it here
+ * also flips AdtHTTP.loggedin to true (loggedin = csrfToken !== "fetch"),
+ * which prevents AdtHTTP.request() from calling login() (and thus from ever
  * using the placeholder password) on the next tool call.
  */
-export function injectSsoSession(adtClient: { httpClient: any }, session: SsoSession): void {
+export function injectSsoSession(
+  adtClient: { httpClient: Pick<AdtHTTP, "session" | "csrfToken"> },
+  session: SsoSession
+): void {
   const http = adtClient.httpClient;
-  const cookieMap: Map<string, string> = (http as any).cookie;
-  cookieMap.clear();
-  for (const [k, v] of session.cookies) cookieMap.set(k, v);
+  http.session.importCookies({ cookieHeader: [...session.cookies.values()].join("; "), replace: true });
   http.csrfToken = session.csrfToken;
 }

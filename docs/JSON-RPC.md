@@ -33,8 +33,8 @@ Three pre-existing steps, none of them specific to JSON-RPC:
 2. [`src/sso.ts`](../src/sso.ts) `bootstrapSsoSession()` — shells out to
    `C:\Windows\System32\curl.exe --negotiate -u :` against `/sap/bc/adt/compatibility/graph` and
    harvests the `SAP_SESSIONID_*` cookies + `x-csrf-token`.
-3. [`src/sso.ts`](../src/sso.ts) `injectSsoSession()` — writes them into the live `AdtHTTP`: the
-   private `cookie` Map and the public `csrfToken` setter.
+3. [`src/sso.ts`](../src/sso.ts) `injectSsoSession()` — writes them into the live `AdtHTTP`: its
+   cookie jar (`session.importCookies`) and the public `csrfToken` setter.
 
 `AdtHTTP.loggedin` is just `csrfToken !== "fetch"`. Setting the token flips it to `true`, which stops
 `AdtHTTP.request()` from calling `login()` with the placeholder. Afterwards `_request()` attaches
